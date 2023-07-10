@@ -4,6 +4,7 @@ namespace Sleefs\Tests;
 
 use Illuminate\Foundation\Testing\TestCase ;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 use Sleefs\Helpers\curl\Curl;
 use Sleefs\Helpers\GraphQL\GraphQLClient;
@@ -11,6 +12,7 @@ use Sleefs\Helpers\GraphQL\GraphQLClient;
 
 class GraphQLTest extends TestCase {
 
+    use RefreshDatabase;
     //private $urlToCurl = 'http://apps.sleefs.com/appdev/public';
 
 
@@ -30,13 +32,16 @@ class GraphQLTest extends TestCase {
     public function testGQQueryBasic()
     {
 
+        //echo "SHIPHERO_ACCESS_TOKEN: ".env('SHIPHERO_ACCESSTOKEN')."\n";
+
     	$gqlClient = new GraphQLClient('https://public-api.shiphero.com/graphql',array("Authorization: Bearer ".env('SHIPHERO_ACCESSTOKEN')));
 
         $gqlQuery = array("query" => '{purchase_order(id:"427614"){data{id,po_number,po_date,account_id,vendor_id,created_at,fulfillment_status,po_note,description,subtotal,total_price,images,vendor_id,line_items(first: 1){edges{node {id,legacy_id,po_id,account_id,warehouse_id,vendor_id,po_number,sku,barcode,note,quantity,quantity_received,quantity_rejected,product_name}}}}}}');
 
         $resp = $gqlClient->query($gqlQuery,array("Content-type: application/json"));
         //print_r($resp->data->purchase_order->data->po_number);
-        $this->assertMatchesRegularExpression('SL191217',$resp->data->purchase_order->data->po_number);
+        //print_r($resp->data);
+        $this->assertMatchesRegularExpression('/SL191217/',$resp->data->purchase_order->data->po_number);
     }
 
     public function testGQQueryHttpHeadersError()
@@ -49,7 +54,7 @@ class GraphQLTest extends TestCase {
 
         $resp = $gqlClient->query($gqlQuery,array("Content-type: application/json"));
         //print_r($resp->data->purchase_order->data->po_number);
-        $this->assertMatchesRegularExpression(true,$resp->error);
+        $this->assertTrue($resp->error);
     }
 
 
@@ -65,7 +70,7 @@ class GraphQLTest extends TestCase {
         $gqlMutationDeletion = array("query" => 'mutation{delete_item(item_id: '.$respCreation->data->create_item->id.'){id}}');
         $respDeletion = $gqlClient->query($gqlMutationDeletion,array("Content-type: application/json"));
 
-        $this->assertMatchesRegularExpression('P1201813-800',$respCreation->data->create_item->name);
+        $this->assertMatchesRegularExpression('/P1201813-800/',$respCreation->data->create_item->name);
         $this->assertTrue(isset($respDeletion->data->delete_item->id));
     }
 

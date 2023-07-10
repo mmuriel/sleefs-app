@@ -4,6 +4,8 @@ namespace Sleefs\Tests\integration;
 
 use Illuminate\Foundation\Testing\TestCase ;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
 use Sleefs\Models\Shiphero\PurchaseOrder;
 use Sleefs\Models\Shiphero\PurchaseOrderItem;
 use Sleefs\Helpers\Shiphero\ShipheroFulfillmentStatusSyncedDataChecker;
@@ -15,6 +17,7 @@ use Sleefs\Helpers\GraphQL\GraphQLClient;
 
 class ShipheroPOsSyncerIntegrationTest extends TestCase {
 
+    use RefreshDatabase;
 	private $remotePo = '';
     private $pos = array();
     private $items = array();
@@ -57,21 +60,15 @@ class ShipheroPOsSyncerIntegrationTest extends TestCase {
         $this->assertFalse($error);//Syncing musn't fail.
 
         //3. Now data must be synced!.
-        $this->assertMatchesRegularExpression($this->remotePo->fulfillment_status,$localPo->fulfillment_status);
-        $this->assertMatchesRegularExpression($this->remotePo->line_items->edges[0]->node->quantity_received,$localPo->items[0]->quantity_received);
+        $this->assertEquals($this->remotePo->fulfillment_status,$localPo->fulfillment_status);
+        $this->assertEquals($this->remotePo->line_items->edges[0]->node->quantity_received,$localPo->items[0]->quantity_received);
 
         //4. It must be synced, even in persistent data.
         unset($localPo);
         $localPo = PurchaseOrder::whereRaw("po_id = '1446'")->first();
-        $this->assertMatchesRegularExpression('closed',$localPo->fulfillment_status);
+        $this->assertEquals('closed',$localPo->fulfillment_status);
 	}
 
-
-    public function testPuttingAllTogether(){
-
-        
-
-    }
 
 
 	/* Preparing the Test */

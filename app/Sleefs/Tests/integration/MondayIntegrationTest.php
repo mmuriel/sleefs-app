@@ -4,6 +4,7 @@ namespace Sleefs\Tests\integration;
 
 use Illuminate\Foundation\Testing\TestCase ;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 use Sleefs\Helpers\GraphQL\GraphQLClient;
 use Sleefs\Helpers\Shiphero\ShipheroAllProductsGetter;
@@ -13,7 +14,7 @@ use Sleefs\Models\Shiphero\InventoryReport;
 use Sleefs\Models\Shiphero\InventoryReportItem;
 use Sleefs\Models\Shiphero\PurchaseOrder;
 use Sleefs\Models\Shiphero\PurchaseOrderItem;
-use Sleefs\Helpers\MondayApi\MondayGqlApi;
+use Sleefs\Helpers\MondayAPI\MondayGqlApi;
 
 use Sleefs\Models\Monday\Pulse;
 use Sleefs\Helpers\Monday\MondayVendorValidator;
@@ -22,6 +23,7 @@ use Sleefs\Helpers\Monday\MondayGroupChecker;
 use Sleefs\Helpers\Monday\MondayFullPulseColumnGetter;
 
 class MondayIntegrationTest extends TestCase {
+    use RefreshDatabase;
     private $pos = array();
 	private $pulses = array();
     private $extendedPos = array();
@@ -42,7 +44,7 @@ class MondayIntegrationTest extends TestCase {
     	$pulse = Pulse::whereRaw(" idpo='".$this->pos[1]->id."' ")->get();
     	//echo "MMMMMM: 43\n";
     	//print_r($pulse);
-    	$this->assertMatchesRegularExpression(0,$pulse->count(),"Si existen pulsos registrados en la DB");
+    	$this->assertEquals(0,$pulse->count(),"Si existen pulsos registrados en la DB");
 
     }
 
@@ -92,9 +94,9 @@ class MondayIntegrationTest extends TestCase {
 		}
 		$pulseCopy = Pulse::find($pulse->id);
 		//Assertions
-		$this->assertRegExp('/^([0-9]{6,10})/',''.$newPulse->data->create_item->id);
-		$this->assertMatchesRegularExpression(true,$saveOperationRes);
-		$this->assertMatchesRegularExpression($newPulse->data->create_item->id,$pulseCopy->idmonday);
+		$this->assertMatchesRegularExpression('/^([0-9]{6,10})/',''.$newPulse->data->create_item->id);
+		$this->assertEquals(true,$saveOperationRes);
+		$this->assertEquals($newPulse->data->create_item->id,$pulseCopy->idmonday);
 		//Remove the new pulse for after re-test
 		$this->mondayApi->deletePulse($newPulse->data->create_item->id);
     }
@@ -102,7 +104,7 @@ class MondayIntegrationTest extends TestCase {
     public function testGetAnAlreadyCreatedPulse(){
     	$pulse = Pulse::find(1);
     	$rawPulse = $this->mondayApi->getPulse($pulse->idmonday);
-    	$this->assertMatchesRegularExpression('2010-20',$rawPulse->name);
+    	$this->assertMatchesRegularExpression('/2010\-20/',$rawPulse->name);
     }
 
     public function testUpdateAnExistingPulse(){
@@ -116,8 +118,8 @@ class MondayIntegrationTest extends TestCase {
     	$rawPulse = $this->mondayApi->updatePulse($this->mondayBoard,$pulse->idmonday,'expected_date3',$dataExpected['date_str']);
 
     	$fullPulse = $this->mondayApi->getPulse($pulse->idmonday);
-    	$this->assertMatchesRegularExpression('2019-09-25',$fullPulse->column_values[2]->text);
-    	$this->assertMatchesRegularExpression('2019-09-29',$fullPulse->column_values[3]->text);
+    	$this->assertMatchesRegularExpression('/2019\-09\-25/',$fullPulse->column_values[2]->text);
+    	$this->assertMatchesRegularExpression('/2019\-09\-29/',$fullPulse->column_values[3]->text);
     }
 
 
@@ -143,20 +145,20 @@ class MondayIntegrationTest extends TestCase {
     public function testGetPulseNameFromPONumber(){
 
         $nameExtractor = new MondayPulseNameExtractor();
-        $this->assertRegExp('/^[0-9]{4,4}\-{1}[0-9]{1,2}/',$nameExtractor->extractPulseName($this->extendedPos[0]->po_number,$this->extendedPos[0]->vendor_name,$this->mondayValidVendors));
+        $this->assertMatchesRegularExpression('/^[0-9]{4,4}\-{1}[0-9]{1,2}/',$nameExtractor->extractPulseName($this->extendedPos[0]->po_number,$this->extendedPos[0]->vendor_name,$this->mondayValidVendors));
     }
 
     public function testGetPulseNameFromPONumberAltern1(){
 
         $nameExtractor = new MondayPulseNameExtractor();
-        $this->assertMatchesRegularExpression('2209-01',$nameExtractor->extractPulseName($this->extendedPos[7]->po_number,$this->extendedPos[7]->vendor_name,$this->mondayValidVendors));
+        $this->assertMatchesRegularExpression('/2209\-01/',$nameExtractor->extractPulseName($this->extendedPos[7]->po_number,$this->extendedPos[7]->vendor_name,$this->mondayValidVendors));
     }
 
 
     public function testGetPulseNameFromPONumberAltern2(){
 
         $nameExtractor = new MondayPulseNameExtractor();
-        $this->assertMatchesRegularExpression('122416758501025491',$nameExtractor->extractPulseName($this->extendedPos[8]->po_number,$this->extendedPos[8]->vendor_name,$this->mondayValidVendors));
+        $this->assertEquals('122416758501025491',$nameExtractor->extractPulseName($this->extendedPos[8]->po_number,$this->extendedPos[8]->vendor_name,$this->mondayValidVendors));
     }
 
 
@@ -164,28 +166,28 @@ class MondayIntegrationTest extends TestCase {
     public function testGetPulseNameFromPONumberAltern3(){
 
         $nameExtractor = new MondayPulseNameExtractor();
-        $this->assertMatchesRegularExpression('PO 31',$nameExtractor->extractPulseName($this->extendedPos[9]->po_number,$this->extendedPos[9]->vendor_name,$this->mondayValidVendors));
+        $this->assertMatchesRegularExpression('/PO\ 31/',$nameExtractor->extractPulseName($this->extendedPos[9]->po_number,$this->extendedPos[9]->vendor_name,$this->mondayValidVendors));
     }
 
     public function testGetPulseNameFromPONumberAltern4(){
 
         $nameExtractor = new MondayPulseNameExtractor();
-        $this->assertMatchesRegularExpression('PI 32',$nameExtractor->extractPulseName('PI 32 Wristbands','Rocky',$this->mondayValidVendors));
+        $this->assertMatchesRegularExpression('/PI\ 32/',$nameExtractor->extractPulseName('PI 32 Wristbands','Rocky',$this->mondayValidVendors));
     }
 
     public function testGetPulseNameFromPONumberAltern5(){
         $nameExtractor = new MondayPulseNameExtractor();
-        $this->assertMatchesRegularExpression('153527058501025491',$nameExtractor->extractPulseName('153527058501025491 Tape / Clips','Wuxi Jieyu Microfiber Fabric Manufacturing',$this->mondayValidVendors));
+        $this->assertMatchesRegularExpression('/153527058501025491/',$nameExtractor->extractPulseName('153527058501025491 Tape / Clips','Wuxi Jieyu Microfiber Fabric Manufacturing',$this->mondayValidVendors));
     }
 
     public function testGetPulseNameFromPONumberAltern6(){
         $nameExtractor = new MondayPulseNameExtractor();
-        $this->assertMatchesRegularExpression('122416758501025491',$nameExtractor->extractPulseName('Shin guards 122416758501025491','Hebei Chongfeng Science & technology Co',$this->mondayValidVendors));
+        $this->assertMatchesRegularExpression('/122416758501025491/',$nameExtractor->extractPulseName('Shin guards 122416758501025491','Hebei Chongfeng Science & technology Co',$this->mondayValidVendors));
     }
 
     public function testGetPulseNameFromPONumberAltern7(){
         $nameExtractor = new MondayPulseNameExtractor();
-        $this->assertMatchesRegularExpression('HB/AM20220803-D',$nameExtractor->extractPulseName('HB/AM20220803-D Visor Re Order','Hubo Sports Products',$this->mondayValidVendors));
+        $this->assertMatchesRegularExpression('/HB\/AM20220803\-D/',$nameExtractor->extractPulseName('HB/AM20220803-D Visor Re Order','Hubo Sports Products',$this->mondayValidVendors));
     }
 
     public function testGetPulseSuccessFromPONumber(){
@@ -194,9 +196,9 @@ class MondayIntegrationTest extends TestCase {
         $pulseName = $nameExtractor->extractPulseName($this->extendedPos[0]->po_number,$this->extendedPos[0]->vendor_name,$this->mondayValidVendors);
         $pulsesOk = Pulse::whereRaw(" (name='{$pulseName}') ")->get();
         $pulse = $pulsesOk->get(0);
-        $this->assertMatchesRegularExpression(1,$pulsesOk->count());
-        $this->assertMatchesRegularExpression('807861772',$pulsesOk->get(0)->idmonday);
-        $this->assertMatchesRegularExpression('807861772',$pulse->idmonday);
+        $this->assertEquals(1,$pulsesOk->count());
+        $this->assertEquals('807861772',$pulsesOk->get(0)->idmonday);
+        $this->assertequals('807861772',$pulse->idmonday);
 
     }
 
@@ -206,7 +208,7 @@ class MondayIntegrationTest extends TestCase {
         $nameExtractor = new MondayPulseNameExtractor();
         $pulseName = $nameExtractor->extractPulseName($this->extendedPos[1]->po_number,$this->extendedPos[1]->vendor_name,$this->mondayValidVendors);
         $pulsesOk = Pulse::whereRaw(" (name='{$pulseName}') ")->get();
-        $this->assertMatchesRegularExpression(0,$pulsesOk->count());
+        $this->assertEquals(0,$pulsesOk->count());
 
     }
 
@@ -215,7 +217,7 @@ class MondayIntegrationTest extends TestCase {
 
         $mondayGroupChecker = new MondayGroupChecker();
         $groupName = $mondayGroupChecker->getCorrectGroupName($this->extendedPos[6]->created_at);
-        $this->assertMatchesRegularExpression('PO September 2020',$groupName);
+        $this->assertMatchesRegularExpression('/PO\ September\ 2020/',$groupName);
 
     }
 
@@ -223,7 +225,7 @@ class MondayIntegrationTest extends TestCase {
 
         $mondayGroupChecker = new MondayGroupChecker();
         $group = $mondayGroupChecker->getGroup($this->extendedPos[0]->created_at,$this->mondayBoard,$this->mondayApi);
-        $this->assertRegExp("/^(Po\ October\ 2020)/i",$group->title);
+        $this->assertMatchesRegularExpression("/^(Po\ October\ 2020)/i",$group->title);
     }
 
 
@@ -231,7 +233,7 @@ class MondayIntegrationTest extends TestCase {
 
         $mondayGroupChecker = new MondayGroupChecker();
         $group = $mondayGroupChecker->getGroup($this->extendedPos[6]->created_at,$this->mondayBoard,$this->mondayApi);
-        $this->assertMatchesRegularExpression(null,$group);
+        $this->assertEquals(null,$group);
     }
 
 
@@ -249,45 +251,18 @@ class MondayIntegrationTest extends TestCase {
         $pulseTotalCost = $getter->getValue('total_cost0',$fullPulse);
 
 
-        $this->assertMatchesRegularExpression('2010-20',$pulseName);
-        $this->assertMatchesRegularExpression('D1021',$pulseTitle);
-        $this->assertMatchesRegularExpression('DX Sporting Goods',$pulseVendor);
-        $this->assertMatchesRegularExpression('2019-09-25',$pulseCreatedDate);
-        $this->assertMatchesRegularExpression('2019-09-29',$pulseExpectedDate);
-        $this->assertMatchesRegularExpression(2,$pulseReceived);
-        $this->assertMatchesRegularExpression(3349.5,$pulseTotalCost);
+        $this->assertMatchesRegularExpression('/2010\-20/',$pulseName);
+        $this->assertMatchesRegularExpression('/D1021/',$pulseTitle);
+        $this->assertMatchesRegularExpression('/DX\ Sporting\ Goods/',$pulseVendor);
+        $this->assertMatchesRegularExpression('/2019\-09\-25/',$pulseCreatedDate);
+        $this->assertMatchesRegularExpression('/2019\-09\-29/',$pulseExpectedDate);
+        $this->assertEquals(2,$pulseReceived);
+        $this->assertEquals(3349.5,$pulseTotalCost);
 
     }
 
 
 
-
-    public function testPulsesGroupFor20220907PoMustBePOSeptembre2022(){
-
-
-
-    }
-
-
-
-    /*
-    ========================================================
-    ========================================================
-    ========================================================
-    ========================================================
-    ========================================================
-    ========================================================
-
-
-    Preparación de datos para ejecutar los tests
-
-    ========================================================
-    ========================================================
-    ========================================================
-    ========================================================
-    ========================================================
-    ========================================================
-    */
 
 
 

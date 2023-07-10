@@ -12,6 +12,11 @@ namespace Sleefs\Helpers;
  * @author @maomuriel
  * mauricio.muriel@calitek.net
  */
+
+use \Monolog\Logger;
+use \Monolog\Handler\StreamHandler;
+
+
 class CustomLogger {
 
     //put your code here
@@ -30,15 +35,15 @@ class CustomLogger {
         switch ($type_message){
 
             case 'WARNING': $log->pushHandler(new \Monolog\Handler\StreamHandler(base_path().'/app.log', \Monolog\Logger::WARNING));
-                            $log->addWarning($msg);
+                            $log->warning($msg);
                             break;
             case 'ERROR':   
                             $log->pushHandler(new \Monolog\Handler\StreamHandler(base_path().'/app.log', \Monolog\Logger::ERROR));
-                            $log->addError($msg);
+                            $log->error($msg);
                             break;
             case 'INFO':   
                             $log->pushHandler(new \Monolog\Handler\StreamHandler(base_path().'/app.log', \Monolog\Logger::INFO));
-                            $log->addInfo($msg);
+                            $log->info($msg);
                             break;
 
         }

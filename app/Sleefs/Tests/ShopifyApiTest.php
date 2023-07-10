@@ -4,6 +4,8 @@ namespace Sleefs\Tests;
 
 use Illuminate\Foundation\Testing\TestCase ;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
 use Sleefs\Models\Shopify\Product;
 use Sleefs\Models\Shopify\Variant;
 
@@ -12,6 +14,7 @@ use Sleefs\Helpers\ShopifyAPI\Shopify;
 
 class ShopifyApiTest extends TestCase {
 
+	use RefreshDatabase;
 	public $prd,$var1,$var2;
 
 	public function setUp():void
@@ -57,8 +60,8 @@ class ShopifyApiTest extends TestCase {
 	public function testInmemoryDatabaseProductVariantsRelationship(){
 
 		$tmpPrd = Product::where('title','=','Colombian Sleeve Yellow')->first();
-		$this->assertMatchesRegularExpression('Sleefs',$this->var1->product->vendor);
-		$this->assertMatchesRegularExpression('SL-COL-Y-L',$tmpPrd->variants[0]->sku);
+		$this->assertEquals('Sleefs',$this->var1->product->vendor);
+		$this->assertMatchesRegularExpression('/SL\-COL\-Y\-L/',$tmpPrd->variants[0]->sku);
 
 
 	}
@@ -70,9 +73,9 @@ class ShopifyApiTest extends TestCase {
 		$spClient = new Shopify(getenv('SHPFY_BASEURL'),getenv('SHPFY_ACCESSTOKEN'));
 		$options = "ids=431368941,10847934410";
 		$data = $spClient->getAllProducts($options);
-		$this->assertMatchesRegularExpression("Baseball Lace USA Arm Sleeve",$data->products[0]->title,"El nombre del producto no es: Baseball Lace USA Arm Sleeve, ahora es: ".$data->products[0]->title);
-		$this->assertMatchesRegularExpression(1,count($data->products),"La cantidad de productos recuperada no es 2, es: ".count($data->products));
-		$this->assertMatchesRegularExpression("Sleeve",$data->products[0]->product_type);
+		$this->assertMatchesRegularExpression("/Baseball\ Lace\ USA\ Arm\ Sleeve/",$data->products[0]->title,"El nombre del producto no es: Baseball Lace USA Arm Sleeve, ahora es: ".$data->products[0]->title);
+		$this->assertEquals(1,count($data->products),"La cantidad de productos recuperada no es 2, es: ".count($data->products));
+		$this->assertEquals("Sleeve",$data->products[0]->product_type);
 		//count($data->products);
 
 	}
@@ -85,7 +88,7 @@ class ShopifyApiTest extends TestCase {
 		$data = $spClient->getAllProducts($options);
 		//count($data->products);
 		$variantRaw = $spClient->getSingleProductVariant($data->products[0]->variants[0]->id);
-		$this->assertMatchesRegularExpression('SL-BB-USA-Y-1',$variantRaw->variant->sku);
+		$this->assertMatchesRegularExpression('/SL\-BB\-USA\-Y\-1/',$variantRaw->variant->sku);
 
 	}
 
@@ -96,7 +99,7 @@ class ShopifyApiTest extends TestCase {
 		$spClient = new Shopify(getenv('SHPFY_BASEURL'),getenv('SHPFY_ACCESSTOKEN'));
 		$options = "ids=431368941,10847934410";
 		$data = $spClient->getSingleProduct('431368941');
-		$this->assertMatchesRegularExpression('Baseball Lace USA Arm Sleeve',$data->product->title);
+		$this->assertMatchesRegularExpression('/Baseball\ Lace\ USA\ Arm\ Sleeve/',$data->product->title);
 
 	}
 

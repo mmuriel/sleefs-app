@@ -1,7 +1,7 @@
 <?php
 namespace Sleefs\Helpers\Shiphero;
 
-use Sleefs\Helpers\Misc\interfaces\IRemoteToLocalDataSyncer;
+use Sleefs\Helpers\Misc\Interfaces\IRemoteToLocalDataSyncer;
 
 
 class ShipheroToLocalPODataSyncer implements IRemoteToLocalDataSyncer{

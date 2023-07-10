@@ -4,6 +4,8 @@ namespace Sleefs\Tests;
 
 use Illuminate\Foundation\Testing\TestCase ;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
 use Sleefs\Models\Shiphero\PurchaseOrder;
 use Sleefs\Models\Shiphero\PurchaseOrderItem;
 use Sleefs\Models\Shiphero\Vendor;
@@ -15,6 +17,7 @@ use Sleefs\Helpers\GraphQL\GraphQLClient;
 
 class ShipheroVendorsSyncerTest extends TestCase {
 
+  use RefreshDatabase;
 	public $vendors = array();
 	private $gqlVendorsRequest = '';
 
@@ -120,7 +123,7 @@ class ShipheroVendorsSyncerTest extends TestCase {
         }]';
         $apiVendorsData = json_decode($apiVendorsData);
         $vendorsDiff = $shipheroVendorChecker->checkDiff($apiVendorsData);
-        $this->assertMatchesRegularExpression("VmVuZG9yOjE0OTI0",$vendorsDiff[0]->node->id);
+        $this->assertEquals("VmVuZG9yOjE0OTI0",$vendorsDiff[0]->node->id);
 	}
 
 

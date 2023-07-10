@@ -4,6 +4,7 @@ namespace Sleefs\Tests;
 
 use Illuminate\Foundation\Testing\TestCase ;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 use Sleefs\Models\Shiphero\PurchaseOrder;
 use Sleefs\Models\Shiphero\PurchaseOrderItem;
@@ -16,6 +17,7 @@ use Sleefs\Models\Shopify\Variant;
 
 class ShipheroGraphQLApiTest extends TestCase {
 
+    use RefreshDatabase;
 	public $po,$item1,$item2;
 
 	public function setUp():void
@@ -89,6 +91,10 @@ class ShipheroGraphQLApiTest extends TestCase {
 
     	$resp = $shipHeroApi->refreshAccessToken();
     	$arrEnv = file(base_path('.env'));
+        if (file_exists(base_path('.env.testing')) && app()->environment(['testing'])){
+            $arrEnv = [];
+            $arrEnv = file(base_path('.env.testing'));
+        }
     	$savedAccessTokenInEnvFile = '';
     	foreach ($arrEnv as $envRecord){
     		if (preg_match("/SHIPHERO_ACCESSTOKEN=([^\"\>\<]{1,2000})/",$envRecord,$matches))
@@ -98,7 +104,7 @@ class ShipheroGraphQLApiTest extends TestCase {
     		}
     	}
 
-    	$this->assertMatchesRegularExpression($shipHeroApi->getAccessToken(),$newAccessToken);
+    	$this->assertEquals($shipHeroApi->getAccessToken(),$newAccessToken);
     	$this->assertFalse(($shipHeroApi->getAccessToken() == $oldAccessToken));
     	//print_r($resp->access_token);
     }
@@ -110,7 +116,7 @@ class ShipheroGraphQLApiTest extends TestCase {
     	$shipHeroApi = new ShipheroGQLApi($gqlClient,'https://public-api.shiphero.com/graphql','https://public-api.shiphero.com/auth',env('SHIPHERO_ACCESSTOKEN'),env('SHIPHERO_REFRESHTOKEN'));
 
     	$resp = $shipHeroApi->getExtendedPO(584025,25);
-    	$this->assertMatchesRegularExpression(75,count($resp->data->purchase_order->data->line_items->edges));
+    	$this->assertEquals(75,count($resp->data->purchase_order->data->line_items->edges));
     }
 
 
@@ -120,7 +126,7 @@ class ShipheroGraphQLApiTest extends TestCase {
     	$shipHeroApi = new ShipheroGQLApi($gqlClient,'https://public-api.shiphero.com/graphql','https://public-api.shiphero.com/auth',env('SHIPHERO_ACCESSTOKEN'),env('SHIPHERO_REFRESHTOKEN'));
 
         $resp = $shipHeroApi->getProducts();
-        $this->assertMatchesRegularExpression(100,count($resp->products->results)); 
+        $this->assertEquals(100,count($resp->products->results)); 
     }
 
 
@@ -130,7 +136,7 @@ class ShipheroGraphQLApiTest extends TestCase {
         $shipHeroApi = new ShipheroGQLApi($gqlClient,'https://public-api.shiphero.com/graphql','https://public-api.shiphero.com/auth',env('SHIPHERO_ACCESSTOKEN'),env('SHIPHERO_REFRESHTOKEN'));
 
         $resp = $shipHeroApi->getProducts(['qtyProducts'=>2000]);
-        $this->assertRegExp("/^There are not enough credits/",$resp->errors[0]->message);
+        $this->assertMatchesRegularExpression("/^There are not enough credits/",$resp->errors[0]->message);
     }
 
 
@@ -140,7 +146,7 @@ class ShipheroGraphQLApiTest extends TestCase {
         $shipHeroApi = new ShipheroGQLApi($gqlClient,'https://public-api.shiphero.com/graphql','https://public-api.shiphero.com/auth',env('SHIPHERO_ACCESSTOKEN'),env('SHIPHERO_REFRESHTOKEN'));
 
         $resp = $shipHeroApi->getProducts(['available' => true,'qtyProducts' => 3]);
-        $this->assertMatchesRegularExpression(3,count($resp->products->results));
+        $this->assertEquals(3,count($resp->products->results));
 
         $isAvailable = false;
         foreach ($resp->products->results as $prd)
@@ -162,8 +168,8 @@ class ShipheroGraphQLApiTest extends TestCase {
 
         $resp = $shipHeroApi->getProductsByWareHouse('V2FyZWhvdXNlOjE2ODQ=',["qtyProducts" => 5]);
         //print_r($resp);
-        $this->assertMatchesRegularExpression(1,$resp->pageInfo->hasNextPage);
-        $this->assertMatchesRegularExpression(5,count($resp->edges));
+        $this->assertEquals(1,$resp->pageInfo->hasNextPage);
+        $this->assertEquals(5,count($resp->edges));
     }
 
     public function testGetProductsFromWarehouseError()
@@ -191,10 +197,10 @@ class ShipheroGraphQLApiTest extends TestCase {
         );
         $createProductResponse = $shipHeroApi->createProduct($createProductData);
         if (isset($createProductResponse->data->product_create->product)){
-            $this->assertMatchesRegularExpression($createProductData['name'],$createProductResponse->data->product_create->product->name);
+            $this->assertMatchesRegularExpression("/".$createProductData['name']."/",$createProductResponse->data->product_create->product->name);
             //It deletes the product just created
             $deleteProductResponse = $shipHeroApi->deleteProduct($createProductData['sku']);
-            $this->assertMatchesRegularExpression(10,$deleteProductResponse->data->product_delete->complexity);
+            $this->assertEquals(10,$deleteProductResponse->data->product_delete->complexity);
         }
         else{
             print_r($createProductResponse);
@@ -226,7 +232,7 @@ class ShipheroGraphQLApiTest extends TestCase {
         //Assertion #1: Asserting to error=true, for an unknown product ID (1298 is not a valid product ID)
         $deleteActionResponse = $shphroProductDeleter->deleteProductInShiphero(1298);
         $this->assertTrue($deleteActionResponse->error);
-        $this->assertMatchesRegularExpression("No product found for ID: 1298",$deleteActionResponse->msg);
+        $this->assertMatchesRegularExpression("/No\ product\ found\ for\ ID:\ 1298/",$deleteActionResponse->msg);
 
         //Assertion #2: Asserting to error=true, for not available product (identifyed by sku)
         //              in shiphero's side, it means, there is no product in shiphero
@@ -234,17 +240,17 @@ class ShipheroGraphQLApiTest extends TestCase {
 
         $deleteActionResponse = $shphroProductDeleter->deleteProductInShiphero($this->prd1->id);
         $this->assertTrue($deleteActionResponse->variants[0]->error);//Yes, there must be an error
-        $this->assertMatchesRegularExpression("Not product with sku MMA-PRD-TEST-TO-DEL-100 exists",$deleteActionResponse->variants[0]->msg);
+        $this->assertMatchesRegularExpression("/Not\ product\ with\ sku\ MMA\-PRD\-TEST\-TO\-DEL\-100\ exists/",$deleteActionResponse->variants[0]->msg);
 
         //Assertion #3: It first creates, over the GraphQL API, a product (associated to sku: MMA-PRD-TEST-TO-DEL-100)
         //              in shiphero platform.   
         $createProductResponse = $shipHeroApi->createProduct($createProductData);
-        $this->assertMatchesRegularExpression('MMA-PRD-TEST-TO-DEL-100',$createProductResponse->data->product_create->product->sku);
+        $this->assertMatchesRegularExpression('/MMA\-PRD\-TEST\-TO\-DEL\-100/',$createProductResponse->data->product_create->product->sku);
 
         //Assertion #4: It deletes the product in shiphero platform, now, it should delete product smoothless.
         $deleteActionResponse = $shphroProductDeleter->deleteProductInShiphero($this->prd1->id);
         $this->assertFalse($deleteActionResponse->variants[0]->error);//Correct, no error deleting product by sku.
-        $this->assertRegExp("/([a-f0-9]{24})\ \-\ ([0-9]{2,3})$/",$deleteActionResponse->variants[0]->msg);
+        $this->assertMatchesRegularExpression("/([a-f0-9]{24})\ \-\ ([0-9]{2,3})$/",$deleteActionResponse->variants[0]->msg);
 
     }
 
@@ -256,7 +262,7 @@ class ShipheroGraphQLApiTest extends TestCase {
 
         $resp = $shipHeroApi->getExtendedPOCustomQuery('po_number:"1904-25 remake elite shorts"');
         //print_r($resp);
-        $this->assertMatchesRegularExpression(3,count($resp->data->purchase_order->data->line_items->edges));
+        $this->assertEquals(3,count($resp->data->purchase_order->data->line_items->edges));
 
     }
 

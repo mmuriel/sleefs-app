@@ -4,6 +4,8 @@ namespace Sleefs\Tests;
 
 use Illuminate\Foundation\Testing\TestCase ;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
 use Sleefs\Models\Shiphero\PurchaseOrder;
 use Sleefs\Models\Shiphero\PurchaseOrderItem;
 
@@ -12,6 +14,7 @@ use \mdeschermeier\shiphero\Shiphero;
 
 class ShipheroApiTest extends TestCase {
 
+	use RefreshDatabase;
 	public $po,$item1,$item2;
 
 	public function setUp():void
@@ -62,11 +65,11 @@ class ShipheroApiTest extends TestCase {
 	public function testInmemoryDatabaseProductVariantsRelationship(){
 
 		$tmpPrd = PurchaseOrder::where('po_id','=','515')->first();
-		$this->assertMatchesRegularExpression('closed',$this->po->fulfillment_status);		
-		$this->assertMatchesRegularExpression('SL-USA-BLK-CL-L',$tmpPrd->items[0]->sku);
+		$this->assertEquals('closed',$this->po->fulfillment_status);		
+		$this->assertMatchesRegularExpression('/SL\-USA\-BLK\-CL\-L/',$tmpPrd->items[0]->sku);
 
 		$tmpVariant = PurchaseOrderItem::where('shid','=','59dbc5830fa20')->first();
-		$this->assertMatchesRegularExpression('SL-USA-BLK-CL-XL',$tmpVariant->sku);
+		$this->assertMatchesRegularExpression('/SL\-USA\-BLK\-CL\-XL/',$tmpVariant->sku);
 
 
 	}

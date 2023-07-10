@@ -4,14 +4,16 @@ namespace Sleefs\Tests;
 
 use Illuminate\Foundation\Testing\TestCase ;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 
-use \Sleefs\Helpers\MondayApi\MondayGqlApi;
+use \Sleefs\Helpers\MondayAPI\MondayGqlApi;
 use Sleefs\Helpers\GraphQL\GraphQLClient;
 use Sleefs\Models\Monday\Pulse;
 
 class MondayGqlApiTest extends TestCase {
 
+	use RefreshDatabase;
 	public $mondayGqlApi, $gqlClient;
 
 	public function setUp():void
@@ -26,8 +28,8 @@ class MondayGqlApiTest extends TestCase {
 	public function testGetAllBoards(){
 
 		$allBoards = $this->mondayGqlApi->getAllBoards();
-		$this->assertMatchesRegularExpression(5,count($allBoards->data->boards));
-		$this->assertMatchesRegularExpression('CP Pending POs - MMA -DEV',$allBoards->data->boards[3]->name);
+		$this->assertEquals(5,count($allBoards->data->boards));
+		$this->assertMatchesRegularExpression('/CP\ Pending\ POs\ \-\ MMA\ \-DEV/',$allBoards->data->boards[3]->name);
 
 	}
 
@@ -38,7 +40,7 @@ class MondayGqlApiTest extends TestCase {
 		$idBoard = 670700889;
 		$board = $this->mondayGqlApi->getBoard($idBoard);
 		//print_r($board);
-		$this->assertMatchesRegularExpression('CP Pending POs - MMA -DEV',$board->name);
+		$this->assertMatchesRegularExpression('/CP\ Pending\ POs\ \-\ MMA\ \-DEV/',$board->name);
 		//$this->assertMatchesRegularExpression('POs',$allBoards[0]->name);
 
 	}
@@ -50,8 +52,8 @@ class MondayGqlApiTest extends TestCase {
 		$idBoard = 670700889;
 		$pulses = $this->mondayGqlApi->getBoardPulses($idBoard,'(page:1,limit:25)');
 		//print_r($pulses);
-		$this->assertMatchesRegularExpression(25,count($pulses));
-		$this->assertMatchesRegularExpression('D1021',$pulses[0]->column_values[0]->text);
+		$this->assertEquals(25,count($pulses));
+		$this->assertEquals('Number Pendan',$pulses[0]->column_values[0]->text);
 
 	}
 
@@ -62,7 +64,7 @@ class MondayGqlApiTest extends TestCase {
 		$pulseId = '670700953';
 		$pulse = $this->mondayGqlApi->getPulse($pulseId);
 		//print_r($pulse);
-		$this->assertMatchesRegularExpression('2007-18',$pulse->name);
+		$this->assertEquals('2007-18',$pulse->name);
 	}
 
 
@@ -74,7 +76,7 @@ class MondayGqlApiTest extends TestCase {
 		$newPulse->name = 'P1201813-800';//P120181252
 		$newPulse->idmonday = '';
 		$pulse = $this->mondayGqlApi->getFullPulse($newPulse,$idBoard);
-		$this->assertMatchesRegularExpression(null,$pulse);
+		$this->assertEquals(null,$pulse);
 	}
 
 
@@ -86,7 +88,7 @@ class MondayGqlApiTest extends TestCase {
 		$newPulse->name = 'P120181252';//P120181252
 		$newPulse->idmonday = '';
 		$pulse = $this->mondayGqlApi->getFullPulse($newPulse,$idBoard);
-		$this->assertMatchesRegularExpression('801976673',$pulse->id);
+		$this->assertEquals('801976673',$pulse->id);
 	}
 
 
@@ -98,7 +100,7 @@ class MondayGqlApiTest extends TestCase {
 		$newPulse->name = '';//P120181252
 		$newPulse->idmonday = '801976295';
 		$pulse = $this->mondayGqlApi->getFullPulse($newPulse,$idBoard);
-		$this->assertMatchesRegularExpression('P120181251',$pulse->name);
+		$this->assertEquals('P120181251',$pulse->name);
 	}
 
 
@@ -107,7 +109,7 @@ class MondayGqlApiTest extends TestCase {
 		//ID of board to test: https://sleefs.monday.com/boards/227352240/
 		$pulseId = '81434';
 		$pulse = $this->mondayGqlApi->getPulse($pulseId);
-		$this->assertObjectHasAttribute('error',$pulse);
+		$this->assertObjectHasProperty('error',$pulse);
 	}
 
 
@@ -128,7 +130,7 @@ class MondayGqlApiTest extends TestCase {
 		);
 
 		$newPulse = $this->mondayGqlApi->createPulse($idBoard,$data);
-		$this->assertMatchesRegularExpression('P120181250-AUTOMATED TEST',$newPulse->data->create_item->name);
+		$this->assertMatchesRegularExpression('/P120181250\-AUTOMATED\ TEST/',$newPulse->data->create_item->name);
 		//It deletes the temporary new created pulse
 		$delResponse = $this->mondayGqlApi->deletePulse($newPulse->data->create_item->id);
 		$this->assertTrue(isset($delResponse->data->delete_item->id));
@@ -141,7 +143,7 @@ class MondayGqlApiTest extends TestCase {
 		//ID of board to test: https://sleefs.monday.com/boards/670700889
 		$idBoard = 670700889;
 		$groups = $this->mondayGqlApi->getAllBoardGroups($idBoard);
-		$this->assertMatchesRegularExpression(18,count($groups));
+		$this->assertEquals(20,count($groups)); //El tablero tiene 20 grupos
 	}
 
 
@@ -157,12 +159,12 @@ class MondayGqlApiTest extends TestCase {
 		$newGroup = $this->mondayGqlApi->addGroupToBoard($idBoard,$data);
 		//Asserting the add action
 		$groupTitleNormalized = preg_replace("/\ /","_",strtolower($groupTitle));
-		$this->assertRegExp("/^".$groupTitleNormalized."/",$newGroup->data->create_group->id);
+		$this->assertMatchesRegularExpression("/^".$groupTitleNormalized."/",$newGroup->data->create_group->id);
 
 
 		$delResponse = $this->mondayGqlApi->delBoardGroup($idBoard,$newGroup->data->create_group->id);
 		//Asserting the delete action
-		$this->assertRegExp("/^".$groupTitleNormalized."([0-9]{2,6})/",$delResponse->data->delete_group->id);
+		$this->assertMatchesRegularExpression("/^".$groupTitleNormalized."([0-9]{2,6})/",$delResponse->data->delete_group->id);
 
 	}
 
@@ -178,7 +180,7 @@ class MondayGqlApiTest extends TestCase {
 		$newPulse = $this->mondayGqlApi->createPulse($idBoard,$basicDataPulse);
 		//$responseUpdatePulse = $this->mondayApi->updatePulse($idBoard,$newPulse->pulse->id,'status3','status',$data);
 		$updatePulse = $this->mondayGqlApi->updatePulse($idBoard,$newPulse->data->create_item->id,'vendor2','Good People Spo',);
-		$this->assertObjectHasAttribute('id',$updatePulse->data->change_simple_column_value);		
+		$this->assertObjectHasProperty('id',$updatePulse->data->change_simple_column_value);		
 		/*
 		$delPulse = $this->mondayApi->deletePulse($newPulse->pulse->id);
 		$this->assertMatchesRegularExpression('P120181251',$delPulse->name);

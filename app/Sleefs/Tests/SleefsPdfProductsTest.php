@@ -4,6 +4,7 @@ namespace Sleefs\Tests;
 
 use Illuminate\Foundation\Testing\TestCase ;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 use Sleefs\Helpers\SleefsPdfStickerGenerator;
 use setasign\Fpdi\Fpdi;
@@ -11,6 +12,7 @@ use setasign\Fpdi\Fpdi;
 
 class SleefsPdfProductsTest extends TestCase {
 
+    use RefreshDatabase;
 	public function setUp():void{
         parent::setUp();
         $this->prepareForTests();
@@ -41,7 +43,7 @@ class SleefsPdfProductsTest extends TestCase {
         
 
         $this->assertTrue(file_exists($response->notes));
-        $this->assertRegExp("/(".$orderId."\.pdf){1,1}$/",$response->notes);
+        $this->assertMatchesRegularExpression("/(".$orderId."\.pdf){1,1}$/",$response->notes);
         unlink ($pdfDestPath."/".$orderId.".pdf");
         rmdir ($pdfDestPath);
     }
@@ -64,7 +66,7 @@ class SleefsPdfProductsTest extends TestCase {
 
         $response = $pdfGen->createPdfFile($pdf,'',$orderId,$pdfDestPath);
         $this->assertTrue(file_exists($response->notes));
-        $this->assertRegExp("/(".$orderId."\.pdf){1,1}$/",$response->notes);
+        $this->assertMatchesRegularExpression("/(".$orderId."\.pdf){1,1}$/",$response->notes);
         unlink ($pdfDestPath."/".$orderId.".pdf");
         rmdir ($pdfDestPath);
 

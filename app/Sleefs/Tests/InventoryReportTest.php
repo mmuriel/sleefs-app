@@ -4,6 +4,7 @@ namespace Sleefs\Tests;
 
 use Illuminate\Foundation\Testing\TestCase ;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 use Sleefs\Helpers\Shiphero\SkuRawCollection;
 use Sleefs\Helpers\Shiphero\ShipheroAllProductsGetter;
@@ -21,6 +22,7 @@ use Sleefs\Helpers\GraphQL\GraphQLClient;
 
 class InventoryReportTest extends TestCase {
 
+	use RefreshDatabase;
 
 	private $products = array();
     private $variants = array();
@@ -41,14 +43,14 @@ class InventoryReportTest extends TestCase {
  		$gqlClient = new GraphQLClient('https://public-api.shiphero.com/graphql');
     	$shipHeroApi = new ShipheroGQLApi($gqlClient,'https://public-api.shiphero.com/graphql','https://public-api.shiphero.com/auth',env('SHIPHERO_ACCESSTOKEN'),env('SHIPHERO_REFRESHTOKEN'));
 	
- 		$options = array('qtyProducts'=>5,'createdFrom' => '2020-10-01','createdTo' => '2020-10-02');
+ 		$options = array('qtyProducts'=>5,'createdFrom' => '2023-06-01','createdTo' => '2023-07-01');
  		$products = $shipHeroApi->getProducts($options);
-		$this->assertMatchesRegularExpression(5,count($products->products->results),"No se han retornado 100 productos");
+		$this->assertEquals(5,count($products->products->results),"No se han retornado 100 productos");
 
 		$prdsCollection = new SkuRawCollection();
 		$prdsCollection->addElementsFromShipheroApi($products->products->results);
 
-		$this->assertMatchesRegularExpression(5,$prdsCollection->count(),"Se esperan 5 y la colección tiene".$prdsCollection->count());
+		$this->assertEquals(5,$prdsCollection->count(),"Se esperan 5 y la colección tiene".$prdsCollection->count());
 
  	}
 
@@ -57,6 +59,12 @@ class InventoryReportTest extends TestCase {
  		$prdsCollection = new SkuRawCollection();
  		
  		$prdsCollection = $shProductsGetter->getAllProducts(['graphqlUrl'=>'https://public-api.shiphero.com/graphql','authUrl'=>'https://public-api.shiphero.com/auth','qtyProducts'=>980,'tries' => 3],$prdsCollection);
+
+ 		/*
+ 		echo "MMA-----\n";
+ 		print_r($prdsCollection->count());
+ 		echo "MMA-----\n";
+ 		*/
  		$this->assertGreaterThan(1700,$prdsCollection->count());
  	}
 
@@ -66,15 +74,15 @@ class InventoryReportTest extends TestCase {
  		$productFinder = new ProductGetterBySku();
  		$product = new Product();
  		$product = $productFinder->getProduct($variant->sku,$product);
- 		$this->assertMatchesRegularExpression('100-emoji-black-tights-for-kids',$product->handle);
- 		$this->assertMatchesRegularExpression('Kids Tights',$product->product_type);
+ 		$this->assertMatchesRegularExpression('/hot\-orange\-arm\-sleeve/',$product->handle);
+ 		$this->assertMatchesRegularExpression('/Sleeve/',$product->product_type);
  	}
 
 
  	public function testGetAllQtyOrderedBySku(){
  		$qtyGetter = new QtyOrderedBySkuGetter();
- 		$qtyOrderedBySku = $qtyGetter->getQtyOrdered('SL-10EJICK-KCL-YM');
- 		$this->assertMatchesRegularExpression(17,$qtyOrderedBySku);
+ 		$qtyOrderedBySku = $qtyGetter->getQtyOrdered('SL-HOTORG-AS-L');
+ 		$this->assertEquals(50,$qtyOrderedBySku);
  	}
 
 
@@ -115,9 +123,9 @@ class InventoryReportTest extends TestCase {
         $reportCreator = new ShipheroDailyInventoryReport();
         $report = $reportCreator->createReport(['graphqlUrl'=>'https://public-api.shiphero.com/graphql','authUrl'=>'https://public-api.shiphero.com/auth','qtyProducts'=>980,'tries' => 4,'available'=>false]);
 
-        //print_r($report->inventoryReportItems);
-        $this->assertMatchesRegularExpression(2,$report->inventoryReportItems->count());
-        $this->assertMatchesRegularExpression(0,$report->inventoryReportItems->get(1)->total_on_order);
+        //print_r($report);
+        $this->assertEquals(1,$report->inventoryReportItems->count());
+        $this->assertEquals(0,$report->inventoryReportItems->get(0)->total_on_order);
  	}
 
 
@@ -136,13 +144,13 @@ class InventoryReportTest extends TestCase {
  		}
  		*/
 
- 		$this->assertMatchesRegularExpression(128,$invReport->inventoryReportItems->get(0)->total_inventory);
+ 		$this->assertEquals(128,$invReport->inventoryReportItems->get(0)->total_inventory);
 
  		//Ordenando los items del Invetory Report por cantidad del inventario
  		$invReport->inventoryReportItems = $invReport->inventoryReportItems()->orderBy('total_inventory')->get();
 
 
- 		$this->assertMatchesRegularExpression(2,$invReport->inventoryReportItems->get(0)->total_inventory);
+ 		$this->assertEquals(2,$invReport->inventoryReportItems->get(0)->total_inventory);
  		/*
  		echo "\n\nInventory Report despues de ordenamiento: \n";
  		foreach($invReport->inventoryReportItems as $invReportItem){
@@ -174,144 +182,159 @@ class InventoryReportTest extends TestCase {
      	// Adding data to database
      	//Product #1
      	array_push($this->products,new Product());
-		$this->products[0]->idsp = "shpfy_890987645";
-		$this->products[0]->title = '100 Emoji Black Tights for Kids';
+		$this->products[0]->idsp = "shpfy_6566584451165";
+		$this->products[0]->title = 'Hot Orange Arm Sleeve';
 		$this->products[0]->vendor = 'Sleefs';
-		$this->products[0]->product_type = 'Kids Tights';
-		$this->products[0]->handle = '100-emoji-black-tights-for-kids';
+		$this->products[0]->product_type = 'Sleeve';
+		$this->products[0]->handle = 'hot-orange-arm-sleeve';
 		$this->products[0]->save();
 
 		array_push($this->variants,new Variant());
-		$this->variants[0]->idsp = "shpfy_5678890951";
-		$this->variants[0]->sku = 'SL-10EJICK-KCL-YM';
-		$this->variants[0]->title = 'YM / Black';
+		$this->variants[0]->idsp = "shpfy_39319437836381";
+		$this->variants[0]->sku = 'SL-HOTORG-AS-S-M';
+		$this->variants[0]->title = 'S-M / Hot Orange';
 		$this->variants[0]->idproduct = $this->products[0]->id;
-		$this->variants[0]->price = 25.0;
+		$this->variants[0]->price = 15.0;
 		$this->variants[0]->save();
 
-		//Product #2
-		array_push($this->products,new Product());
-		$this->products[1]->idsp = "shpfy_890987646";
-		$this->products[1]->title = 'Aerial blue and navy arm sleeve';
-		$this->products[1]->vendor = 'Sleefs';
-		$this->products[1]->product_type = 'Sleeve';
-		$this->products[1]->handle = 'aerial-blue-and-navy-arm-sleeve';
-		$this->products[1]->save();
-
 		array_push($this->variants,new Variant());
-		$this->variants[1]->idsp = "shpfy_56788909561";
-		$this->variants[1]->sku = 'SL-AERIB-KS-YL';
-		$this->variants[1]->title = 'Y / Blue/navy';
-		$this->variants[1]->idproduct = $this->products[1]->id;
-		$this->variants[1]->price = 5.0;
+		$this->variants[1]->idsp = "shpfy_39319437803613";
+		$this->variants[1]->sku = 'SL-HOTORG-AS-Y';
+		$this->variants[1]->title = 'Y / Hot Orange';
+		$this->variants[1]->idproduct = $this->products[0]->id;
+		$this->variants[1]->price = 15.0;
 		$this->variants[1]->save();
 
 		array_push($this->variants,new Variant());
-		$this->variants[2]->idsp = "shpfy_5678890962";
-		$this->variants[2]->sku = 'SL-ARL-BLU-NVY-XL-1';
-		$this->variants[2]->title = 'XL / Blue/navy';
-		$this->variants[2]->idproduct = $this->products[1]->id;
-		$this->variants[2]->price = 5.0;
+		$this->variants[2]->idsp = "shpfy_39319437803616";
+		$this->variants[2]->sku = 'SL-HOTORG-AS-L';
+		$this->variants[2]->title = 'L / Hot Orange';
+		$this->variants[2]->idproduct = $this->products[0]->id;
+		$this->variants[2]->price = 15.0;
 		$this->variants[2]->save();
 
-
-		//Product #3
+		//Product #2
 		array_push($this->products,new Product());
-		$this->products[2]->idsp = "shpfy_890987647";
-		$this->products[2]->title = 'Ripped Bear arm sleeve';
-		$this->products[2]->vendor = 'Sleefs';
-		$this->products[2]->product_type = 'Sleeve';
-		$this->products[2]->handle = 'brasilian-sleeve-yellow';
-		$this->products[2]->save();
+		$this->products[1]->idsp = "shpfy_311851773";
+		$this->products[1]->title = 'Basic White Arm Sleeve';
+		$this->products[1]->vendor = 'Sleefs';
+		$this->products[1]->product_type = 'Sleeve';
+		$this->products[1]->handle = 'white-arm-sleeves';
+		$this->products[1]->save();
 
 		array_push($this->variants,new Variant());
-		$this->variants[3]->idsp = "shpfy_56788909571";
-		$this->variants[3]->sku = 'SL-ANIM-BEAR-Y-1';
-		$this->variants[3]->title = 'Y / Black/White';
-		$this->variants[3]->idproduct = $this->products[2]->id;
-		$this->variants[3]->price = 5.0;
+		$this->variants[3]->idsp = "shpfy_44590695434";
+		$this->variants[3]->sku = 'SL-WHT-Y-1';
+		$this->variants[3]->title = 'Y / white';
+		$this->variants[3]->idproduct = $this->products[1]->id;
+		$this->variants[3]->price = 15.0;
 		$this->variants[3]->save();
 
 		array_push($this->variants,new Variant());
-		$this->variants[4]->idsp = "shpfy_56788909572";
-		$this->variants[4]->sku = 'SL-ANIM-BEAR-XS-1';
-		$this->variants[4]->title = 'XS / Black/White';
-		$this->variants[4]->idproduct = $this->products[2]->id;
-		$this->variants[4]->price = 5.0;
+		$this->variants[4]->idsp = "shpfy_44590695562";
+		$this->variants[4]->sku = 'SL-WHT-XS-1';
+		$this->variants[4]->title = 'XS / white';
+		$this->variants[4]->idproduct = $this->products[1]->id;
+		$this->variants[4]->price = 15.0;
 		$this->variants[4]->save();
 
 		array_push($this->variants,new Variant());
-		$this->variants[5]->idsp = "shpfy_56788909573";
-		$this->variants[5]->sku = 'SL-ANIM-BEAR-S-M-1';
-		$this->variants[5]->title = 'S/M / Black/White';
-		$this->variants[5]->idproduct = $this->products[2]->id;
-		$this->variants[5]->price = 5.0;
+		$this->variants[5]->idsp = "shpfy_44590695690";
+		$this->variants[5]->sku = 'SL-WHT-S-M-1';
+		$this->variants[5]->title = 'S-M / white';
+		$this->variants[5]->idproduct = $this->products[1]->id;
+		$this->variants[5]->price = 15.0;
 		$this->variants[5]->save();
 
-		array_push($this->variants,new Variant());
-		$this->variants[6]->idsp = "shpfy_56788909574";
-		$this->variants[6]->sku = 'SL-ANIM-BEAR-L-1';
-		$this->variants[6]->title = 'L / Black/White';
-		$this->variants[6]->idproduct = $this->products[2]->id;
-		$this->variants[6]->price = 5.0;
-		$this->variants[6]->save();
 
 		array_push($this->variants,new Variant());
-		$this->variants[7]->idsp = "shpfy_56788909575";
-		$this->variants[7]->sku = 'SL-ANIM-BEAR-XL-1';
-		$this->variants[7]->title = 'XL / Black/White';
+		$this->variants[6]->idsp = "shpfy_44590695818";
+		$this->variants[6]->sku = 'SL-WHT-L-1';
+		$this->variants[6]->title = 'L / white';
+		$this->variants[6]->idproduct = $this->products[1]->id;
+		$this->variants[6]->price = 15.0;
+		$this->variants[6]->save();
+
+		//Product #3
+		array_push($this->products,new Product());
+		$this->products[2]->idsp = "shpfy_402045989";
+		$this->products[2]->title = 'Basic Black Headband';
+		$this->products[2]->vendor = 'Sleefs';
+		$this->products[2]->product_type = 'Wide Headband';
+		$this->products[2]->handle = 'black-wide-headband';
+		$this->products[2]->save();
+
+		array_push($this->variants,new Variant());
+		$this->variants[7]->idsp = "shpfy_402045989";
+		$this->variants[7]->sku = 'SL-BLK-WH';
+		$this->variants[7]->title = 'ONE SIZE / Black';
 		$this->variants[7]->idproduct = $this->products[2]->id;
 		$this->variants[7]->price = 5.0;
 		$this->variants[7]->save();
 
 		//Product #4
 		array_push($this->products,new Product());
-		$this->products[3]->idsp = "shpfy_890987648";
-		$this->products[3]->title = 'Red Hat';
+		$this->products[3]->idsp = "shpfy_4579115073629";
+		$this->products[3]->title = 'Basic White Leg Sleeve';
 		$this->products[3]->vendor = 'Sleefs';
-		$this->products[3]->product_type = 'Hat';
-		$this->products[3]->handle = 'red-hat';
+		$this->products[3]->product_type = 'Long Leg Sleeve';
+		$this->products[3]->handle = 'basic-white-leg-sleeve';
 		$this->products[3]->save();
 
 		array_push($this->variants,new Variant());
-		$this->variants[6]->idsp = "shpfy_56788909581";
-		$this->variants[6]->sku = 'SL-REDHAT';
-		$this->variants[6]->title = 'Red Hat';
-		$this->variants[6]->idproduct = $this->products[3]->id;
-		$this->variants[6]->price = 12.50;
-		$this->variants[6]->save();
+		$this->variants[8]->idsp = "shpfy_32123436007517";
+		$this->variants[8]->sku = 'SL-WHT-LG-S';
+		$this->variants[8]->title = 'Slim / White';
+		$this->variants[8]->idproduct = $this->products[3]->id;
+		$this->variants[8]->price = 15.00;
+		$this->variants[8]->save();
 
+		array_push($this->variants,new Variant());
+		$this->variants[9]->idsp = "shpfy_32123436040285";
+		$this->variants[9]->sku = 'SL-WHT-LG-M';
+		$this->variants[9]->title = 'Reg / White';
+		$this->variants[9]->idproduct = $this->products[3]->id;
+		$this->variants[9]->price = 15.00;
+		$this->variants[9]->save();
+
+		array_push($this->variants,new Variant());
+		$this->variants[10]->idsp = "shpfy_32123436073053";
+		$this->variants[10]->sku = 'SL-WHT-LG-L';
+		$this->variants[10]->title = 'Big / White';
+		$this->variants[10]->idproduct = $this->products[3]->id;
+		$this->variants[10]->price = 15.00;
+		$this->variants[10]->save();
 
 		// Adding POs 
 
 		//PO #1
 		array_push($this->pos, new PurchaseOrder());
         $this->pos[0]->po_id = 515;
-        $this->pos[0]->po_number = '1810-07 Re Order Kids Tights';
-        $this->pos[0]->po_date = '2017-10-30 00:00:00';
+        $this->pos[0]->po_number = '2305-01 Sleeves';
+        $this->pos[0]->po_date = '2023-04-05 10:21:00';
         $this->pos[0]->fulfillment_status = 'pending';
 		$this->pos[0]->save();
 
 		array_push($this->items,new PurchaseOrderItem());
 		$this->items[0]->idpo = $this->pos[0]->id;
-		$this->items[0]->sku = 'SL-10EJICK-KCL-YM';
+		$this->items[0]->sku = 'SL-HOTORG-AS-L';
 		$this->items[0]->shid = '59dbc5830f969';
-		$this->items[0]->quantity = 5;
-		$this->items[0]->quantity_received = 0;
-		$this->items[0]->qty_pending = 5;
-		$this->items[0]->name = '100 Emoji Black Tights for Kids / YM / Black';
-		$this->items[0]->idmd5 = md5('SL-10EJICK-KCL-YM'.'-'.'515');
+		$this->items[0]->quantity = 50;
+		$this->items[0]->quantity_received = 5;
+		$this->items[0]->qty_pending = 45;
+		$this->items[0]->name = 'Hot Orange Arm Sleeve L / Hot Orange';
+		$this->items[0]->idmd5 = md5('SL-HOTORG-AS-L'.'-'.'515');
 		$this->items[0]->save();
 
 		array_push($this->items,new PurchaseOrderItem());
 		$this->items[1]->idpo = $this->pos[0]->id;
-		$this->items[1]->sku = 'SL-ANIM-BEAR-Y-1';
+		$this->items[1]->sku = 'SL-HOTORG-SV-XL';
 		$this->items[1]->shid = '59dbc5830fa20';
-		$this->items[1]->quantity = 3;
-		$this->items[1]->quantity_received = 3;
-		$this->items[1]->qty_pending = 0;
-		$this->items[1]->name = 'Ripped Bear arm sleeve / Y / Black/White';
-		$this->items[1]->idmd5 = md5('SL-ANIM-BEAR-Y-1'.'-'.'515');
+		$this->items[1]->quantity = 25;
+		$this->items[1]->quantity_received = 0;
+		$this->items[1]->qty_pending = 25;
+		$this->items[1]->name = 'Hot Orange Forearm Compression Sleeve XL / Orange';
+		$this->items[1]->idmd5 = md5('SL-HOTORG-SV-XL'.'-'.'515');
 		$this->items[1]->save();
 
 
@@ -434,10 +457,6 @@ class InventoryReportTest extends TestCase {
 		$this->inventoryReportsItems[7]->total_inventory = 45;
 		$this->inventoryReportsItems[7]->total_on_order = 0;
 		$this->inventoryReportsItems[7]->save();
-
-
-
-
 
     }
 

@@ -428,6 +428,10 @@ class ShipheroGQLApi {
     public function saveNewAccessToken($key)
     {
         $path = base_path('.env');
+        if (file_exists(base_path('.env.testing')) && app()->environment(['testing'])){
+            $path = base_path('.env.testing');
+        }
+
         if (file_exists($path)) {
             file_put_contents($path, str_replace(
                 'SHIPHERO_ACCESSTOKEN='.env('SHIPHERO_ACCESSTOKEN'), 'SHIPHERO_ACCESSTOKEN='.$key, file_get_contents($path)

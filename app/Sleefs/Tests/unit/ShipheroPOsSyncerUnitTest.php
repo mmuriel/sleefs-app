@@ -4,6 +4,8 @@ namespace Sleefs\Tests\unit;
 
 use Illuminate\Foundation\Testing\TestCase ;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
 use Sleefs\Models\Shiphero\PurchaseOrder;
 use Sleefs\Models\Shiphero\PurchaseOrderItem;
 use Sleefs\Models\Shiphero\Vendor;
@@ -16,6 +18,7 @@ use Sleefs\Helpers\GraphQL\GraphQLClient;
 
 class ShipheroPOsSyncerUnitTest extends TestCase {
 
+	use RefreshDatabase;
 	public $vendors = array();
 	private $gqlVendorsRequest = '';
 
@@ -152,7 +155,7 @@ class ShipheroPOsSyncerUnitTest extends TestCase {
 			$this->assertNotEquals($remotePo->line_items->edges[0]->node->quantity_received,$localPo->items[0]->quantity_received);
 			list($error,$localPo) = $shipheroToLocalPODataSyncer->syncData($localPo,$remotePo);
 			$this->assertFalse($error);
-			$this->assertMatchesRegularExpression($remotePo->line_items->edges[0]->node->quantity_received,$localPo->items[0]->quantity_received);
+			$this->assertEquals($remotePo->line_items->edges[0]->node->quantity_received,$localPo->items[0]->quantity_received);
 		}
 
 

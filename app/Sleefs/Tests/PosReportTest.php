@@ -4,6 +4,8 @@ namespace Sleefs\Tests;
 
 use Illuminate\Foundation\Testing\TestCase ;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
 use Sleefs\Helpers\Shopify\ImageUrlBySizeGenerator;
 
 use Sleefs\Models\Shiphero\PurchaseOrder;
@@ -15,6 +17,7 @@ use \mdeschermeier\shiphero\Shiphero;
 
 class PosReportTest extends TestCase {
 
+	use RefreshDatabase;
 	public $po,$item1,$item2;
 
 	public function setUp():void
@@ -114,7 +117,7 @@ class PosReportTest extends TestCase {
 		$urlImgGenerator = new ImageUrlBySizeGenerator();
 		foreach ($urls as $url){
 			$finalUrl = $urlImgGenerator->createImgUrlWithSizeParam($url,150,150);
-			$this->assertRegexp('/_150x150\.(jpg|jpeg|png|gif)\?v=([0-9]{8,15})/',$finalUrl);
+			$this->assertMatchesRegularExpression('/_150x150\.(jpg|jpeg|png|gif)\?v=([0-9]{8,15})/',$finalUrl);
 			
 		}
 
@@ -128,8 +131,8 @@ class PosReportTest extends TestCase {
 		$total = $totalizer->getTotalItems($this->po->id,'total');
 		$received = $totalizer->getTotalItems($this->po->id,'received');
 
-		$this->assertMatchesRegularExpression(124,$total);
-		$this->assertMatchesRegularExpression(74,$received);
+		$this->assertEquals(124,$total);
+		$this->assertEquals(74,$received);
 
 	}
 
@@ -150,7 +153,7 @@ class PosReportTest extends TestCase {
 			echo $item->name."\n";
 		}
 		*/
-		$this->assertMatchesRegularExpression('SL-BB-LC-SH-L',$po->items->get(0)->sku);
+		$this->assertMatchesRegularExpression('/SL\-BB\-LC\-SH\-L/',$po->items->get(0)->sku);
 	}
 
 	/* Preparing the Test */

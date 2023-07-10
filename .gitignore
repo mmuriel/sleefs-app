@@ -30,4 +30,5 @@ error_log
 /dropbox/
 /dropbox/*
 app/Sleefs/*.json
+app.log
 
