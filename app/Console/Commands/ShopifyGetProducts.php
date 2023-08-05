@@ -15,7 +15,7 @@ class ShopifyGetProducts extends Command
      *
      * @var string
      */
-    protected $signature = 'ShopifyAdminAPI:getproducts {--p|page=1 : Pagination to call in API} {--s|save=false : It defines if the info must be persisted to database or not}';
+    protected $signature = 'ShopifyAdminAPI:getproducts {--p|page_info=1 : Pagination to call in API} {--s|save=false : It defines if the info must be persisted to database or not}';
 
     /**
      * The console command description.
@@ -42,14 +42,23 @@ class ShopifyGetProducts extends Command
     public function handle()
     {
         //
-        $shClt = new Shopify(getenv('SHPFY_BASEURL'),getenv('SHPFY_ACCESSTOKEN'));
+        $shClt = new Shopify(env('SHPFY_BASEURL'),env('SHPFY_ACCESSTOKEN'));
+        //print_r($shClt);
         $opts = $this->options();
         $arguments = $this->arguments();
 
-        $apiCallOpts = 'page='.$opts['page']."&limit=250";
-        $data = $spClt->getAllProducts($apiCallOpts);
+        /*
+        print_r($opts);
+        exit;
+        */
 
-        foreach ($data->products as $prd){
+        if ($opts['page_info']==1)
+            $apiCallOpts = "limit=250";
+        else
+            $apiCallOpts = 'page_info='.$opts['page_info']."&limit=250";
+
+        $data = $shClt->getAllProducts($apiCallOpts);
+        foreach ($data['content']->products as $prd){
 
             $product = Product::where("idsp","=",'shpfy_'.$prd->id)->first();
 
@@ -123,6 +132,9 @@ class ShopifyGetProducts extends Command
 
         
         }
+
+        echo "Echo Headers:\n";
+        print_r($data['headers']->links_params);
         /*
         if ($opts['save'] == 'true'){
 

@@ -15,7 +15,7 @@ class ShopifyProductIDAdjuster extends Command
      *
      * @var string
      */
-    protected $signature = 'ShopifyProductIDAdjuster:adjust {--m|quantity=} {--p|page=}';
+    protected $signature = 'ShopifyProductIDAdjuster:adjust {--l|limit=100 : Quantity items per page, for pagination} {--p|page_info : Cursor ID for pagination }';
 
     /**
      * The console command description.
@@ -42,155 +42,62 @@ class ShopifyProductIDAdjuster extends Command
     public function handle(){
         //
 
-        $qty = $this->option('quantity');
-        $page = $this->option('page');
+        $limit = $this->option('limit');
+        $page_info = $this->option('page_info');
 
-        if ($qty==null)
-            $qty = 10;
-
-        if($page==null){
-
+        if($page_info==null || $page_info==''){
             if (file_exists(storage_path()."/pager.txt")){
                 $savedPage = file(storage_path()."/pager.txt");
-                $page = trim($savedPage[0]);
-                $page++;
+                if (isset($savedPage[0]) && $savedPage[0] != '')
+                    $page_info = trim($savedPage[0]);
+                else
+                    $page_info='';
             }else{
-
-                $page=1;    
+                $page_info='';    
             }
         }
-
-        $offsetIndex = ($page*$qty)-$qty;
-
         //===========================================================================================
-
-
         $shopify = new Shopify(getenv('SHPFY_BASEURL'),getenv('SHPFY_ACCESSTOKEN'));
-        $shopifyQueryForProductsOptions = 'fields=id,vendor,product_type,created_at,title,sku,handle,images,variants&limit='.$qty.'&page='.$page;
+
+        if ($page_info == '' || $page_info == null)
+            $shopifyQueryForProductsOptions = 'fields=id,vendor,product_type,created_at,title,sku,handle,images,variants&limit='.$limit;
+        else
+            $shopifyQueryForProductsOptions = 'fields=id,vendor,product_type,created_at,title,sku,handle,images,variants&limit='.$limit.'&page_info='.$page_info;
+
+
         $remoteProducts = $shopify->getAllProducts($shopifyQueryForProductsOptions);
+        //print_r($remoteProducts['content']);
+        foreach ($remoteProducts['content']->products as $remoteProduct){
 
+            $tmpLocalShopifyProduct = Product::where('idsp','=','shpfy_'.$remoteProduct->id)->first();
+            if ($tmpLocalShopifyProduct == null){
+                echo "\nRegistrando nuevo producto para ".$remoteProduct->title."\n";
+                $localProduct = new Product();
+                $localProduct->idsp = 'shpfy_'.$remoteProduct->id;
+            }
+            else{
+                echo "\nActualizando datos para el producto: ".$remoteProduct->title."\n";
+                $localProduct = $tmpLocalShopifyProduct;
+            }
 
-        foreach ($remoteProducts->products as $remoteProduct){
-
-            echo "\nRegistrando nuevo producto para ".$remoteProduct->title."\n";
-            $newLocalProduct = new Product();
-            $newLocalProduct->idsp = 'shpfy_'.$remoteProduct->id;
-            $newLocalProduct->title = $remoteProduct->title;
-            $newLocalProduct->vendor = $remoteProduct->vendor;
-            $newLocalProduct->product_type = $remoteProduct->product_type;
-            $newLocalProduct->handle = $remoteProduct->handle;
-            $newLocalProduct->save();
-            $this->adjustLocalShopifyProduct ($newLocalProduct,$remoteProduct);
+            $localProduct->title = $remoteProduct->title;
+            $localProduct->vendor = $remoteProduct->vendor;
+            $localProduct->product_type = $remoteProduct->product_type;
+            $localProduct->handle = $remoteProduct->handle;
+            $localProduct->save();
+            $this->adjustLocalShopifyProduct ($localProduct,$remoteProduct);
             echo "\n------------------------------------------------------\n";
         }
 
-
-        //===========================================================================================        
-
-        /*
-        //Recupera los productos locales a analizar
-        $localProducts = Product::whereRaw(" 1 ")->orderBy('id')->offset($page)->limit(($qty))->get();
-        $totalLocalProducts = $localProducts->count();
-
-        //Recupera los datos remotos de los productos desde shopify
-        $shopifyQueryForProductsOptions = 'handle=';
-        foreach ($localProducts as $product){
-            $shopifyQueryForProductsOptions .= $product->handle.",";
-        }
-        echo "\nPage: ".$page." | Offset Index: ".$offsetIndex." | Total per page: ".$qty."\n";
-        echo "Total elements: ".$localProducts->count()."\n";
-        echo "Query: ".$shopifyQueryForProductsOptions."\n";
-        //Intancia un objecto tipo Shopify (API) para realizar queries a la tienda.
-        $shopify = new Shopify(getenv('SHPFY_BASEURL'),getenv('SHPFY_ACCESSTOKEN'));
-        $remoteProducts = $shopify->getAllProducts($shopifyQueryForProductsOptions);
-        $totalRemoteProducts = count($remoteProducts->products);
-
-        
-        //echo "Total remote products: ".$totalRemoteProducts."\n";
-        //return 1;
-        
-        echo "\n\n\nComparando registros\n\n";
-        //print_r($remoteProducts->products);
-        
-        foreach($localProducts as $index => $localProduct){
-            $j = ($totalRemoteProducts - 0) - 1;
-            $ctrlDescubierto = false;
-            for ($i=0;$i <= round(($totalRemoteProducts  / 2),0,PHP_ROUND_HALF_DOWN) && $j >= round(($totalRemoteProducts  / 2),0,PHP_ROUND_HALF_DOWN);$i++){
-                $remotePrdt1 = $remoteProducts->products[$i];
-                $remotePrdt2 = $remoteProducts->products[$j];
-
-                if ($localProduct->handle == $remotePrdt1->handle){
-
-                    //Primero borra cualquier producto que pueda generar una colision de 
-                    //de IDs shopify duplicados
-                    $resDelete = Product::whereRaw(" idsp='shpfy_".$remotePrdt1->id."' && id != '".$localProduct->id."' ")->delete();
-
-
-
-                    //echo "\n\n\n---\n[+] ".$remotePrdt1->handle."(Local ID: ".$localProduct->id.")\n";
-                    //echo "[+] Lo encontró por abajo\n";
-                    //echo "=================================\n\n";
-                    $ctrlDescubierto = true;
-                    try{
-                        
-                        $localProduct->idsp = "shpfy_".$remotePrdt1->id;
-                        $localProduct->save();
-                        $this->adjustLocalShopifyProduct($localProduct,$remotePrdt1);
-                    }
-                    catch (\Exception $e){
-
-                        echo "+++++++++++++++++++++++++++++++++++++++++++++\n";
-                        echo "+++++++++++++++++++++++++++++++++++++++++++++\n";
-                        echo "Error salvando de nuevo el producto, lo más\n";
-                        echo "probable que exista el idsp ya registrado\n";
-                        echo "+++++++++++++++++++++++++++++++++++++++++++++\n";
-                        echo "+++++++++++++++++++++++++++++++++++++++++++++\n";
-                    }
-                    break;
-                }
-                if ($localProduct->handle == $remotePrdt2->handle){
-
-                    //Primero borra cualquier producto que pueda generar una colision de 
-                    //de IDs shopify duplicados
-                    $resDelete = Product::whereRaw(" idsp='shpfy_".$remotePrdt2->id."' && id != '".$localProduct->id."' ")->delete();
-
-
-                    //echo "\n\n\n---\n[+] ".$remotePrdt2->handle."(Local ID: ".$localProduct->id.")\n";
-                    //echo "[+] Lo encontró por arriba\n";
-                    //echo "=================================\n\n";
-                    $ctrlDescubierto = true;
-                    try{
-
-                        $localProduct->idsp = "shpfy_".$remotePrdt2->id;
-                        $localProduct->save();
-                        $this->adjustLocalShopifyProduct($localProduct,$remotePrdt2);
-                    }
-                    catch (\Exception $e){
-
-                        echo "+++++++++++++++++++++++++++++++++++++++++++++\n";
-                        echo "+++++++++++++++++++++++++++++++++++++++++++++\n";
-                        echo "Error salvando de nuevo el producto, lo más\n";
-                        echo "probable que exista el idsp ya registrado\n";
-                        echo "+++++++++++++++++++++++++++++++++++++++++++++\n";
-                        echo "+++++++++++++++++++++++++++++++++++++++++++++\n";
-                    }
-                    break;
-                }
-                $j = ($totalRemoteProducts - $i) - 1;
+        if (isset($remoteProducts['headers']->links_params)){
+            $nextCursorLink = $shopify->getPaginationCursorValue($remoteProducts['headers']->links_params,'next');
+            if ($nextCursorLink != ''){
+                $this->saveProcessedPage($nextCursorLink);    
             }
-
-            if ($ctrlDescubierto==false){
-
-                echo "\n\n\n---\n[-] ".$localProduct->handle."(Local ID: ".$localProduct->id.")\n";
-                echo "[-] Este producto local ya no tiene un producto definido en la tienda...\n";
-                echo "=================================\n\n";
-                $this->adjustLocalShopifyProduct($localProduct);
-                $localProduct->delete();
+            else{
+                $this->saveProcessedPage('');   
             }
         }
-
-        */
-        $this->saveProcessedPage($page);
     }
 
 
@@ -221,40 +128,63 @@ class ShopifyProductIDAdjuster extends Command
             //1. Variantes:
             foreach($remoteShopifyPrdt->variants as $remoteVariant){
 
+                $tmpLocalShopifyVariant = Variant::where('idsp','=','shpfy_'.$remoteVariant->id)->first();
+                if ($tmpLocalShopifyVariant == null){
+                    echo "\n---- Registrando la nueva variante para: ".$remoteVariant->title." (".$remoteVariant->sku.")";
+                    $localVariant = new Variant();
+                    $localVariant->idsp = 'shpfy_'.$remoteVariant->id;
+                }
+                else{
+                    echo "\n---- Actualizando datos para la variante: ".$remoteVariant->title;
+                    $localVariant = $tmpLocalShopifyVariant;
+                }
+
                 //1. Elimina los posibles IDs duplicados:
                 //$resDelete = Variant::where('idsp','=',"shpfy_".$remoteVariant->id)->delete();
-                echo "Registrando la nueva variante para: ".$remoteVariant->title." (".$remoteVariant->sku.")\n";
-                $newVariant = new Variant();
-                $newVariant->idsp = "shpfy_".$remoteVariant->id;
-                $newVariant->sku = trim($remoteVariant->sku);
-                $newVariant->title = $remoteVariant->title;
-                $newVariant->idproduct = $localShopifyPrdt->id;
-                $newVariant->price = $remoteVariant->price;
-                $newVariant->save();
+                
+                $localVariant->sku = trim($remoteVariant->sku);
+                $localVariant->title = $remoteVariant->title;
+                $localVariant->idproduct = $localShopifyPrdt->id;
+                $localVariant->price = $remoteVariant->price;
+                $localVariant->save();
 
             }
             
+
             //2. Imagenes:
             foreach($remoteShopifyPrdt->images as $remoteImg){
 
-                echo "Registrando la nueva imagen para: shpfy_".$remoteImg->src." (".$remoteImg->id.")\n";
+                //print_r($remoteImg);
+
+                echo "\n--- Registrando la nueva imagen para: shpfy_".$remoteImg->src." (".$remoteImg->id.")\n";
+                $tmpLocalShopifyImg = ProductImage::where('idsp','=','shpfy_'.$remoteImg->id)->first();
+                if ($tmpLocalShopifyImg == null){
+                    echo "\n---- Registrando una nueva imagen de producto: ".$remoteImg->src;
+                    $localImage = new ProductImage();
+                    $localImage->idsp = 'shpfy_'.$remoteImg->id;
+                }
+                else{
+                    echo "\n---- Actualizando datos para la imagen: ".$remoteImg->src;
+                    $localImage = $tmpLocalShopifyImg;
+                }
+
+
+                //echo "Registrando la nueva imagen para: shpfy_".$remoteImg->src." (".$remoteImg->id.")\n";
                 //$resDelete = ProductImage::where('idsp','=',"shpfy_".$remoteImg->id)->delete();
-                $newImage = new ProductImage();
-                $newImage->idsp = "shpfy_".$remoteImg->id;
-                $newImage->position = $remoteImg->position;
-                $newImage->url = $remoteImg->src;
-                $newImage->idproducto = $localShopifyPrdt->id;
-                $newImage->save();
+                $localImage->position = $remoteImg->position;
+                $localImage->url = $remoteImg->src;
+                $localImage->idproducto = $localShopifyPrdt->id;
+                $localImage->save();
             }
 
         }
     }
 
 
-    private function saveProcessedPage($page){
+    private function saveProcessedPage($page_info){
 
         $fp = fopen(storage_path()."/pager.txt","w+");
-        fwrite($fp,$page);
+        fwrite($fp,$page_info);
         fclose($fp);
     }
 }

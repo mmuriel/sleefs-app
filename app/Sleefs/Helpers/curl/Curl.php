@@ -24,11 +24,65 @@ class Curl {
 
         if($errno = curl_errno($c)) {
             $error_message = curl_strerror($errno);
-            //echo "cURL error ({$errno}):\n {$error_message}";
             $contents = "cURL error ({$errno}):\n {$error_message}";
         }
         curl_close($c);
         return utf8_encode($contents);
+    }
+
+    /**
+     * This function executes a HTTP GET request against $url, then,
+     * it returns the response headers and the response payload, as an
+     * associative array of strings.
+     * 
+     * @param String $url   The url endpoint to make the request against to.
+     * @param Array $headers    (optional) Specific headers to add to http request.
+     * 
+     * @return Array []     Anonimous associative array with two (2) keys
+     *                      ['headers'] => Respons'es headers (in json format)
+     *                      ['content'] => Payload.
+     * 
+     * 
+     * 
+     */
+
+    public static function urlGetWithResponseHeaders($url,$headers=null) {
+
+        $c = curl_init();
+        curl_setopt($c, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($c, CURLOPT_URL, $url);
+        $responseHeaders = [];
+        if ($headers != null && is_array($headers)){
+
+            curl_setopt($c, CURLOPT_HTTPHEADER, $headers);
+
+        }
+
+        if($headers != null && in_array('Custom-SSL-Verification:false',$headers)){
+            curl_setopt($c, CURLOPT_SSL_VERIFYHOST, false); 
+            curl_setopt($c, CURLOPT_SSL_VERIFYPEER, false);
+        }
+
+        //Verifica si debe retornar los headers en el cuerpo
+        curl_setopt($c, CURLOPT_HEADERFUNCTION,
+            function($curl, $resHeader) use (&$responseHeaders)
+            {
+                $len = strlen($resHeader);
+                $resHeader = explode(':', $resHeader, 2);
+                if (count($resHeader) < 2) // ignore invalid headers
+                  return $len;
+                $responseHeaders[strtolower(trim($resHeader[0]))][] = trim($resHeader[1]);
+                return $len;
+            }
+        );
+
+        $contents = curl_exec($c);
+        if($errno = curl_errno($c)) {
+            $error_message = curl_strerror($errno);
+            $contents = "cURL error ({$errno}):\n {$error_message}";
+        }
+        curl_close($c);
+        return (['headers'=>json_encode($responseHeaders),'content' => $contents]);
     }
 
     public static function urlPost($url, $content, $headers=null) {

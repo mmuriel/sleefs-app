@@ -37,7 +37,7 @@ use Sleefs\Helpers\Shopify\ProductTaggerForNewResTag;
 use Sleefs\Helpers\FindifyAPI\Findify;  
 
 use Sleefs\Models\Monday\Pulse;
-use Sleefs\Helpers\MondayApi\MondayGqlApi;
+use Sleefs\Helpers\MondayAPI\MondayGqlApi;
 use Sleefs\Helpers\Monday\MondayVendorValidator; 
 use Sleefs\Helpers\Monday\MondayPulseNameExtractor;
 use Sleefs\Helpers\Monday\MondayGroupChecker;

@@ -66,6 +66,17 @@ class CurlTest extends TestCase {
 
     }
 
+
+    public function testGetHeadersBack(){
+
+        $res = Curl::urlGetWithResponseHeaders($this->urlToCurl.'/api/tests/curl/param1?checker=param2',['Custom-SSL-Verification:false']);
+        //print_r($res);
+        $this->assertMatchesRegularExpression("/^1\. param2 \- param1/",$res['content']);
+        $this->assertMatchesRegularExpression("/\"date\":/",$res['headers']);
+        $this->assertObjectHasProperty("date",json_decode($res['headers']));
+
+    }
+
 	/* Preparing the Test */
 	public function createApplication(){
         $app = require __DIR__.'/../../../bootstrap/app.php';

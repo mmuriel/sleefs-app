@@ -35,7 +35,7 @@ class OrderCreateController extends Controller {
 
         $pathToPrdFiles = env("APP_PATH_TO_DRPBOX")."PDFS/APP-PDFS/";// Path: /home/admin/app/dropbox/PDFS/APP-PDFS/
         $pathToBlankFiles = env("APP_PATH_TO_DRPBOX")."PDFS/APP-BLANK/";// Path: /home/admin/app/dropbox/PDFS/APP-BLANK/
-        $pathToPdfOrderFiles = env("APP_PATH_TO_DRPBOX")."/ORDERS/".date("Ymd")."/";
+        $pathToPdfOrderFiles = env("APP_PATH_TO_DRPBOX")."ORDERS/".date("Ymd")."/";
 
         $pdfSeek = new PdfTemplateSeeker();
         $productNameNormalizer = new ProductNameToDirectoryNormalizer();

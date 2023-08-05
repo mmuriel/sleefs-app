@@ -1,16 +1,20 @@
 version: '3.8'
 services:
   sleefs-app:
-    image: maomuriel/ubun22_04-php8_1-apache2_4:0.2.0
+    image: maomuriel/ubun22_04-php8_1-apache2_4:0.2.1
     container_name: "sleefs-app"
     stdin_open: false # docker run -i
     tty: false # docker run -t
     environment:
       - "TZ=America/Bogota"
+      - "DOMAIN_NAME=local.sientifica.com"
     ports:
       - "8080:80"
+      - "443:443"
     volumes:
       - "/path/to/sleefs-app-migration:/var/www/app"
+      - "/path/to/local/ssl-certs_and_private-key:/etc/ssl/custom-directory-name"
+      - "/path/to/custom/apache/config/sites-available:/etc/apache2/sites-available"
     depends_on:
       - "sleefs-db"
     links:

@@ -38,6 +38,7 @@ class SleefsTestCreateInventoryReport extends Command
     public function handle()
     {
         //
-        exec("php /home/admin/app/artisan inventoryreport:create > /dev/null 2>&1 & echo $!");
+        //echo "php ".base_path()."/artisan inventoryreport:create > /dev/null 2>&1 & echo $!";
+        exec("php ".base_path()."/artisan inventoryreport:create > /dev/null 2>&1 & echo $!");
     }
 }

@@ -106,7 +106,12 @@ class InventoryReportController extends BaseController{
 
 
 	function createReport(Request $request){
+		$arrRes = [];
 		$res = exec("".env('PHP_PATH')." ".base_path()."/artisan inventoryreport:create > /dev/null 2>&1 & echo $!",$arrRes);
+		if (count($arrRes) > 0){
+			return response()->json(["code"=>200,"Message" => "Good!","response" => $res,"fullres" => ""]);
+		}
+
 		return response()->json(["code"=>200,"Message" => "Good!","response" => $res,"fullres" => implode($arrRes," ")]);
 	}
 
