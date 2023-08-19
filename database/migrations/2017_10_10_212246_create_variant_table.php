@@ -15,7 +15,8 @@ class CreateVariantTable extends Migration
     {
         Schema::create('variants', function (Blueprint $table) {
             $table->increments('id');
-            $table->unsignedInteger('idsp');
+            //$table->unsignedInteger('idsp');
+            $table->string('idsp',60)->unique();
             $table->string('sku',50)->index();
             $table->string('title',150);
             $table->unsignedInteger('idproduct');

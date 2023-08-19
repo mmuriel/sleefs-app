@@ -60,7 +60,6 @@ Class PurchaseOrderWebHookEndPointController extends Controller {
         'pay' => 'pay',//Pay
         'received' => 'received',//Received
         'total cost' => 'total_cost0',//Total Cost
-
     );
 
 
@@ -762,6 +761,15 @@ Class PurchaseOrderWebHookEndPointController extends Controller {
                     //6.4 NO EXISTE el pulse en monday.com, entonces, lo genera.
 
                     //6.4.1   Recupera el grupo al que pertenece la PO
+
+                    /*
+                    // Se elimina este bloque de código que localiza el grupo
+                    // adecuado en el tablero de monday.com, si no existe, crea
+                    // el grupo.
+                    // Esto ya no es necesario luego del 2023-08-18, porque se
+                    // tomó la decisión de agrupar todos los pulsos en un solo
+                    // grupo genérico, denominado "Pending PO"
+                    //
                     $groupChecker = new MondayGroupChecker();
                     $group = $groupChecker->getGroup($poextended->created_at,env('MONDAY_BOARD'),$mondayApi);
                     if ($group==null){
@@ -773,10 +781,12 @@ Class PurchaseOrderWebHookEndPointController extends Controller {
                         $group = $mondayApi->addGroupToBoard(env('MONDAY_BOARD'),$data);
                         $group = $group->data->create_group;
                     }
+                    */
 
                     $pulseData = array(
                         'item_name' => $pulse->name,
-                        'group_id' => $group->id
+                        //'group_id' => $group->id
+                        'group_id' => env('MONDAY_BOARD_GROUP')
                     );
                     $newPulse = $mondayApi->createPulse(env('MONDAY_BOARD'),$pulseData);
                     $fullPulse = $mondayApi->getFullPulse($pulse,env('MONDAY_BOARD'));
@@ -787,10 +797,26 @@ Class PurchaseOrderWebHookEndPointController extends Controller {
                     $pulse->mon_group = $fullPulse->group->id;
                     $pulse->save();
                 }
+                
+                // Para los pulses que no se ingresan al group adecuado,
+                // sino que están en los grupos de modelo anterior (el
+                // nombre del grupo se deduce del mes y el año de cuando
+                // se generó la PO)
+
+                if ($pulse->mon_group != env('MONDAY_BOARD_GROUP')){
+                    $movingPulseToAnotherGroupRes = $mondayApi->movePulseToAnotherGroup($pulse->idmonday,env('MONDAY_BOARD_GROUP'));
+                    //print_r($movingPulseToAnotherGroupRes);
+                    if (isset($movingPulseToAnotherGroupRes->data->move_item_to_group->id) && $movingPulseToAnotherGroupRes->data->move_item_to_group->id == $pulse->idmonday){
+                        $pulse->mon_group = env('MONDAY_BOARD_GROUP');
+                        $pulse->save();
+                    }
+                }                
+
                 //======================================================
                 //6.5   Genera las actualizaciones de los campos
                 //======================================================
                 $pulseGetterValue = new MondayFullPulseColumnGetter();//Recuperador de los valores de las columnas en el $fullPulse
+
                 //6.5.1 Verifica el title del pulse
                 $pulseTitleCandidate = $poextended->po_number;
                 $pulseTitleCandidate = preg_replace("/".$pulse->name."/","",$pulseTitleCandidate);

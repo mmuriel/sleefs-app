@@ -434,6 +434,15 @@ class MondayGqlApi {
         //$contents = Curl::urlPost($url, $data);
         return $contents;
     }
+
+
+    public function movePulseToAnotherGroup($idPulse,$idNewGroup){
+        $mutation = 'mutation{move_item_to_group(item_id:'.$idPulse.',group_id:"'.$idNewGroup.'"){id}}';
+        $postContent = array('query' => $mutation);
+        $contents = $this->gqlClient->query($postContent);
+        //$contents = Curl::urlPost($url, $data);
+        return $contents;
+    }
 }
 
 ?>

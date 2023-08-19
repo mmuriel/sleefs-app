@@ -53,24 +53,26 @@ class MondayGqlApiTest extends TestCase {
 		$pulses = $this->mondayGqlApi->getBoardPulses($idBoard,'(page:1,limit:25)');
 		//print_r($pulses);
 		$this->assertEquals(25,count($pulses));
-		$this->assertEquals('Number Pendan',$pulses[0]->column_values[0]->text);
+
+		//Corresponde a este pulse: https://sleefs.monday.com/boards/670700889/pulses/5015404512
+		$this->assertEquals('Mask Re Order',$pulses[0]->column_values[0]->text);
 
 	}
 
 
 	public function testGetPulse(){
 
-		//ID of board to test: https://sleefs.monday.com/boards/227352240/
-		$pulseId = '670700953';
+		//ID of board to test: https://sleefs.monday.com/boards/670700889
+		$pulseId = '670700915';
 		$pulse = $this->mondayGqlApi->getPulse($pulseId);
 		//print_r($pulse);
-		$this->assertEquals('2007-18',$pulse->name);
+		$this->assertEquals('1808-43',$pulse->name);
 	}
 
 
 	public function testGetFullPulseFromPulseNameError(){
 
-		//ID of board to test: https://sleefs.monday.com/boards/227352240/
+		//ID of board to test: https://sleefs.monday.com/boards/670700889
 		$idBoard = 670700889;
 		$newPulse = new Pulse();
 		$newPulse->name = 'P1201813-800';//P120181252
@@ -82,31 +84,31 @@ class MondayGqlApiTest extends TestCase {
 
 	public function testGetFullPulseFromPulseName(){
 
-		//ID of board to test: https://sleefs.monday.com/boards/227352240/
+		//ID of board to test: https://sleefs.monday.com/boards/670700889
 		$idBoard = 670700889;
 		$newPulse = new Pulse();
-		$newPulse->name = 'P120181252';//P120181252
+		$newPulse->name = '1808-55';//P120181252
 		$newPulse->idmonday = '';
 		$pulse = $this->mondayGqlApi->getFullPulse($newPulse,$idBoard);
-		$this->assertEquals('801976673',$pulse->id);
+		$this->assertEquals('670700893',$pulse->id);
 	}
 
 
 	public function testGetFullPulseFromMondayId(){
 
-		//ID of board to test: https://sleefs.monday.com/boards/227352240/
+		//ID of board to test: https://sleefs.monday.com/boards/670700889
 		$idBoard = 670700889;
 		$newPulse = new Pulse();
 		$newPulse->name = '';//P120181252
-		$newPulse->idmonday = '801976295';
+		$newPulse->idmonday = '670700904';
 		$pulse = $this->mondayGqlApi->getFullPulse($newPulse,$idBoard);
-		$this->assertEquals('P120181251',$pulse->name);
+		$this->assertEquals('1810-04',$pulse->name);
 	}
 
 
 	public function testGetPulseError(){
 
-		//ID of board to test: https://sleefs.monday.com/boards/227352240/
+		//ID of board to test: https://sleefs.monday.com/boards/670700889
 		$pulseId = '81434';
 		$pulse = $this->mondayGqlApi->getPulse($pulseId);
 		$this->assertObjectHasProperty('error',$pulse);
@@ -143,7 +145,7 @@ class MondayGqlApiTest extends TestCase {
 		//ID of board to test: https://sleefs.monday.com/boards/670700889
 		$idBoard = 670700889;
 		$groups = $this->mondayGqlApi->getAllBoardGroups($idBoard);
-		$this->assertEquals(20,count($groups)); //El tablero tiene 20 grupos
+		$this->assertEquals(18,count($groups)); //El tablero tiene 20 grupos
 	}
 
 
@@ -181,13 +183,29 @@ class MondayGqlApiTest extends TestCase {
 		//$responseUpdatePulse = $this->mondayApi->updatePulse($idBoard,$newPulse->pulse->id,'status3','status',$data);
 		$updatePulse = $this->mondayGqlApi->updatePulse($idBoard,$newPulse->data->create_item->id,'vendor2','Good People Spo',);
 		$this->assertObjectHasProperty('id',$updatePulse->data->change_simple_column_value);		
-		/*
-		$delPulse = $this->mondayApi->deletePulse($newPulse->pulse->id);
-		$this->assertMatchesRegularExpression('P120181251',$delPulse->name);
-		*/
+		
+		$delPulse = $this->mondayGqlApi->deletePulse($newPulse->data->create_item->id);
+		$this->assertEquals($newPulse->data->create_item->id,$delPulse->data->delete_item->id);
 
 	}
 
+
+	public function testMovePulseFromGroupToAnotherGroup(){
+
+		//ID of board to test: https://sleefs.monday.com/boards/230782591
+		$idBoard = 670700889;
+		$basicDataPulse = array(
+			'item_name' => 'P120187002-MMA-TEST',
+		);
+
+		$newPulse = $this->mondayGqlApi->createPulse($idBoard,$basicDataPulse);
+		$movingPulseToAnotherGroup = $this->mondayGqlApi->movePulseToAnotherGroup($newPulse->data->create_item->id,'po_august_2023');
+		$updatedPulse = $this->mondayGqlApi->getPulse($newPulse->data->create_item->id);
+		$this->assertEquals('po_august_2023',$updatedPulse->group->id);
+
+		$delPulse = $this->mondayGqlApi->deletePulse($newPulse->data->create_item->id);
+		$this->assertEquals($newPulse->data->create_item->id,$delPulse->data->delete_item->id);		
+	}
 
 	/* Preparing the Test */
 

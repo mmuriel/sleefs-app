@@ -28,12 +28,13 @@ class MondayIntegrationTest extends TestCase {
 	private $pulses = array();
     private $extendedPos = array();
 	private $mondayUserId = '5277993';
-    private $mondayBoard = '670700889';
+    private $mondayBoard = '';
     private $mondayValidVendors = array('DX Sporting Goods','Good People Sports');
 	public $mondayApi;
 
 	public function setUp():void{
         parent::setUp();
+        $this->mondayBoard = env('MONDAY_BOARD');
         $gqlClt = new GraphQLClient(env('MONDAY_GRAPHQL_BASEURL'),array("Authorization: ".env('MONDAY_APIKEY')));
         $this->mondayApi = new MondayGqlApi($gqlClt);
         $this->prepareForTests();
@@ -72,7 +73,7 @@ class MondayIntegrationTest extends TestCase {
 
 		$pulseData = array(
 			'item_name' => '2010-07',
-            'group_id' => 'po_october_2020',
+            'group_id' => 'po_december_2020',
             'column_values' => array(
                 'title6' => '2-Layer NG',
                 'vendor2' => 'Good People Sports',
@@ -227,7 +228,6 @@ class MondayIntegrationTest extends TestCase {
         $group = $mondayGroupChecker->getGroup($this->extendedPos[0]->created_at,$this->mondayBoard,$this->mondayApi);
         $this->assertMatchesRegularExpression("/^(Po\ October\ 2020)/i",$group->title);
     }
-
 
     public function testCheckNotFoundGroup(){
 

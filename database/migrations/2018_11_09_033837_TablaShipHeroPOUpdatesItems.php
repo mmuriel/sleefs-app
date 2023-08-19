@@ -18,8 +18,10 @@ class TablaShipHeroPOUpdatesItems extends Migration
             $table->unsignedInteger('idpoupdate')->index();
             $table->unsignedInteger('idpoitem')->index();
             $table->integer('quantity');
+            $table->integer('qty_before')->default(0);
             $table->string('sku',150);
             $table->string('position',180)->default('na');
+            $table->integer('tries')->default(0);
             $table->timestamps();
         });
     }

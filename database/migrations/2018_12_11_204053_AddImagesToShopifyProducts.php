@@ -18,7 +18,7 @@ class AddImagesToShopifyProducts extends Migration
             $table->string('idsp',50)->index();
             $table->unsignedInteger('idproducto')->index();            
             $table->integer('position')->index();
-            $table->string('url',200);
+            $table->string('url',256);
             $table->timestamps();
         });
     }
