@@ -119,6 +119,12 @@ class ShipheroGQLApi {
                 return $resp;
             }
         }
+        elseif (isset($resp->message) && $resp->message == 'Token is expired')
+        {
+            $this->refreshToken();
+            $resp = $this->getExtendedPO ($poId,$qtyLineItemsPerPage, $afterForPagination);
+            return $resp;
+        }
         else
         {
             return false;
