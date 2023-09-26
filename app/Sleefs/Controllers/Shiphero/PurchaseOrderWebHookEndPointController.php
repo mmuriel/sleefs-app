@@ -17,6 +17,7 @@ use Sleefs\Models\Shopify\Product;
 use Sleefs\Helpers\Google\SpreadSheets\GoogleSpreadsheetGetWorkSheetIndex;
 use Sleefs\Helpers\Google\SpreadSheets\GoogleSpreadsheetFileLocker;
 use Sleefs\Helpers\Google\SpreadSheets\GoogleSpreadsheetFileUnLocker;
+use Sleefs\Helpers\Google\SpreadSheets\ShipheroPoToGoogleSpreadsheetSyncer;
 
 
 use Sleefs\Models\Shiphero\PurchaseOrder;
@@ -72,7 +73,7 @@ Class PurchaseOrderWebHookEndPointController extends Controller {
 
         /*
             0.  Se inicializan los objetos necesarios para gestionar la peticion que está dividida
-                en 3 partes:
+                en 8 partes:
 
                 1. Registro de los datos de la PO en el libro "POS" del spreadsheet
                 2. Registro de los datos de la PO en el libro "Orders" del spreadsheet
@@ -80,12 +81,13 @@ Class PurchaseOrderWebHookEndPointController extends Controller {
                 4. Registro de los datos de la PO en el libro "Qty-ProductType" del spreadsheet y registro de la orden en la DB
                 5. Se publican los productos que no estén publicados en la tienda shopify
                 6. Se publica/modifica en monday.com el estado de la PO entrante
-        --->    7. Se genera la respuesta al servidor de shiphero //No tiene correspondencia en el array $debug
+                7. Registro de los datos de la PO en el libro "POS" del spreadsheet, versión 2023
+        --->    8. Se genera la respuesta al servidor de shiphero //No tiene correspondencia en el array $debug
         
         */
 
         //$debug = array(false,true,true,true,false,true);//Define que funciones se ejecutan y cuales no. - Produccion
-        $debug = array(false,false,true,true,false,true);//Define que funciones se ejecutan y cuales no. - Test
+        $debug = array(false,false,true,true,false,true,true);//Define que funciones se ejecutan y cuales no. - Test
 
 
 		$po = json_decode(file_get_contents('php://input'));
@@ -192,110 +194,6 @@ Class PurchaseOrderWebHookEndPointController extends Controller {
 
         if ($debug[0] == true){
 
-            $worksheets = $spreadsheet->getWorksheetFeed()->getEntries();// Selecciona el objeto que toma todos los libros de la hoja de cálculo.
-            $worksheet = $worksheets[0];//Toma el primer libro de la hoja de cáculo.
-            $listFeed = $worksheet->getListFeed(); // Trae los registros con indice asociativo (nombre la columna)
-            // @var ListEntry
-            $alreadyAdded = false;
-            $itemsRegistered = array();
-
-            //Genera las actualizaciones
-            foreach ($listFeed->getEntries() as $entry) {
-               $record = $entry->getValues();
-               if ($record['id'] == $po->purchase_order->po_id){
-
-                    foreach ($poextended->line_items as $po_item){
-                        //$product = $variant->product;
-                        $po_item = $po_item->node;
-                        if ($record['sku'] == $po_item->sku){
-
-                            $variant = Variant::where("sku","=",$po_item->sku)->first();
-                            //var_dump($variant->product->product_type);
-
-                       		// Actualiza los registros //
-
-
-                       		//$record'id' => $po->purchase_order->po_id,
-            	            $record['ordered'] = $po_item->quantity; 
-                            $record['po'] = $poextended->po_number; 
-                            $record['received'] = $po_item->quantity_received;
-                            $record['pending'] = $po_item->quantity - $po_item->quantity_received;
-                            $record['status'] = $po_item->fulfillment_status;
-                            $record['total'] = $poextended->total_price;
-
-                            if ($variant != null)
-                                $record['type'] = $variant->product->product_type;
-                            else
-                                $record['type'] = 'ND';
-
-
-                            //===============================================================
-                            //===============================================================
-                            // Se evita el registro sobre el primer libro de la hoja de cáculo
-                            // la hoja denominada "Line Items"
-                            // este cambio se efectua por @maomuriel el 2018-10-10
-                            //===============================================================
-                            //===============================================================
-            	            $entry->update($record);
-                            array_push($itemsRegistered,$po_item->sku);
-                            break;
-
-                        }
-
-                    }
-               }
-            }
-            //return false;
-            //Genera los nuevos registros para el TAB: POS, y Genera la información de:
-            // 
-            // - Total Items
-            // - Total recibidos
-            //
-            $orderTotalItemsReceived = 0;
-            $orderTotalItems = 0;
-
-
-            foreach ($poextended->line_items as $po_item){
-
-                $po_item = $po_item->node;
-                // Estos dos valores son utilizados en el siguiente paso
-                $orderTotalItemsReceived += (0 + $po_item->quantity_received);
-                $orderTotalItems += (0 + $po_item->quantity);
-
-
-                $alreadyAdded = false;
-                foreach($itemsRegistered as $itemRegistered){
-
-                    if ($po_item->sku == $itemRegistered){
-                        $alreadyAdded = true;
-                        break;
-                    }
-                }
-
-                if (!$alreadyAdded){
-
-                    $variant = Variant::where("sku","=",$po_item->sku)->first();
-                    if ($variant != null)
-                        $typeToRecord = $variant->product->product_type;
-                    else
-                        $typeToRecord = '';
-                    $listFeed->insert([
-
-                        'id' => $po->purchase_order->po_id,
-                        'po' => $poextended->po_number,
-                        'sku' => $po_item->sku,
-                        'status' => $po_item->fulfillment_status,
-                        'ordered' => $po_item->quantity,
-                        'received' => $po_item->quantity_received,
-                        'pending' => $po_item->quantity - $po_item->quantity_received,
-                        'total' => $poextended->total_price,
-                        'type' => $typeToRecord,
-
-                        ]);
-
-                }
-
-            }
         }
     
 
@@ -312,77 +210,6 @@ Class PurchaseOrderWebHookEndPointController extends Controller {
 
         if ($debug[1] == true){
 
-            $worksheetOrders = $worksheets[1];
-            $listFeedOrders = $worksheetOrders->getListFeed(); // Trae los registros con indice asociativo (nombre la columna)
-            /** @var ListEntry */
-            $alreadyAdded = false;
-            $itemsRegistered = array();
-
-
-            $orderTotalItemsReceived = 0;
-            $orderTotalItems = 0;
-            foreach ($poextended->line_items as $po_item){
-                $po_item = $po_item->node;
-                $orderTotalItemsReceived += (0 + $po_item->quantity_received);
-                $orderTotalItems += (0 + $po_item->quantity);
-            }
-
-
-            //Genera las actualizaciones
-            $operation = 'insert';
-            $operationalEntry = '';
-            foreach ($listFeedOrders->getEntries() as $entry) {
-               $record = $entry->getValues();
-               if ($record['id'] == $po->purchase_order->po_id || $record['legacyid'] == $poextended->legacy_id){
-                    $operationalEntry = $entry;
-                    if ($poextended->fulfillment_status == 'canceled' || $poextended->fulfillment_status == 'cancelled'){
-                        $operation = 'delete';
-                    }
-                    else{
-                        $operation = 'update';   
-                    }
-                    break;
-               }
-            }
-
-
-            switch($operation){
-
-                case 'update':
-                    $record = $operationalEntry->getValues();
-                    $record['poname'] = htmlspecialchars($poextended->po_number); 
-                    $record['status'] = $poextended->fulfillment_status;
-                    $record['legacyid'] = $poextended->legacy_id;
-                    $record['expecteddate'] = '';
-                    $record['vendor'] = htmlspecialchars($poextended->vendor_name);
-                    $record['totalcost'] = $poextended->total_price;
-                    $record['totalitems'] = $orderTotalItems;
-                    $record['itemsreceived'] = $orderTotalItemsReceived;
-                    $record['pendingitems'] = $orderTotalItems - $orderTotalItemsReceived;
-                    //Registra la actualización
-                    $operationalEntry->update($record);
-                    break;
-
-                case 'insert':
-                    $listFeedOrders->insert([
-                        'id' => $po->purchase_order->po_id,
-                        'legacyid' => $poextended->legacy_id,
-                        'poname' => htmlspecialchars($poextended->po_number),
-                        'status' => $poextended->fulfillment_status,
-                        'createddate' => $poextended->created_at,
-                        'expecteddate' => '',
-                        'vendor' => htmlspecialchars($poextended->vendor_name),
-                        'totalcost' => $poextended->total_price,
-                        'totalitems' => $orderTotalItems,
-                        'itemsreceived' => $orderTotalItemsReceived,
-                        'pendingitems' => $orderTotalItems - $orderTotalItemsReceived,
-                        'paid' => 'no',
-                    ]);
-                    break;
-                case 'delete':
-                    $operationalEntry->delete();
-                    break;
-            }
         }
 
         
@@ -548,50 +375,8 @@ Class PurchaseOrderWebHookEndPointController extends Controller {
             //Registra propiamente dicho en la hoja de calculo
 
 
-            /*
-            //===============================================================
-            //===============================================================
-            // Se evita el registro sobre el primer libro de la hoja de cáculo
-            // la hoja denominada "Line Items"
-            // este cambio se efectua por @maomuriel el 2018-10-10
-            //===============================================================
-            //===============================================================
-
-
-            $worksheetOrders = $worksheets[2];
-            $listFeedOrders = $worksheetOrders->getListFeed(); // Trae los registros con indice asociativo (nombre la columna)
-                
-            foreach ($arrProductType as $key=>$val){
-
-                $alreadyAdded = false;
-                //Genera las actualizaciones
-                foreach ($listFeedOrders->getEntries() as $entry) {
-                   $record = $entry->getValues();
-                   if ($record['type'] == $key){
-
-                        $record['qty'] = $val;
-                        $entry->update($record);
-                        $alreadyAdded = true;
-                        break;
-                   }
-                }
-                //Genera el nuevo registro
-                if (!$alreadyAdded){
-                $listFeedOrders->insert([
-                    'type' => $key,
-                    'qty' => $val,
-                    ]);
-                }
-            }
-
-            */
 
         }
-
-        /*
-        $resUnLock = $wsCtrlUnLocker->unLockFile($spreadsheet,$index); 
-        return "";
-        */
 
 
         /*
@@ -647,65 +432,6 @@ Class PurchaseOrderWebHookEndPointController extends Controller {
 
 
         if ($debug[4] == true){
-
-
-
-            //print_r($po);
-            //print_r($poextended);
-            //return false;
-            
-
-            $shopifyApi = new Shopify(getenv('SHPFY_BASEURL'),getenv('SHPFY_ACCESSTOKEN'));
-            $publishValidatorByImage = new ProductPublishValidatorByImage();
-            $tagger = new ProductTaggerForNewResTag();
-            $findifyApi = new Findify(env('FINDIFY_ENDPOINT'));
-            $remoteShopifyProductGetter = new RemoteProductGetterBySku();
-            $publisher = new AutomaticProductPublisher();
-            
-
-            $htmlEmailBody = '';
-
-            $actualIdProduct = '';
-            $qtyPublishedProducts = 0;
-            foreach($poextended->line_items as $shItem){
-                $shItem = $shItem->node;
-                if ($shItem->quantity_received > 0){//Solo se publican los productos que tengan ingreso al inventario
-
-                    $localProductGetter = new ProductGetterBySku();
-                    $localProduct = new Product();
-                    $localProduct = $localProductGetter->getProduct($shItem->sku,$localProduct);
-                    $shopifyProduct = $remoteShopifyProductGetter->getRemoteProductBySku($shItem->sku,$shopifyApi);
-                    if ($shopifyProduct){
-                        if ($shopifyProduct->published_at==null || $shopifyProduct->published_at=='' || $shopifyProduct->published_at==' '){
-                            if ($shopifyProduct->id != $actualIdProduct){
-                                $qtyPublishedProducts++;
-                                $clogger->writeToLog ("Publicando el producto: ".json_encode($shopifyProduct),"INFO");
-                                //Publica o al menos intenta publicación
-                                $publishingResults = $publisher->publishProduct($shopifyProduct,$publishValidatorByImage,$shopifyApi,$tagger,$findifyApi);
-                                $htmlEmailBody .= "\n".$qtyPublishedProducts.". ".$shopifyProduct->title." (".$shopifyProduct->id.")<br />\n";
-                                if ($publishingResults->value == true){
-                                    //Publicó correctamente
-                                    if (preg_match("/(^NEW[0-9]{6,6}|^RES[0-9]{6,6})/",$publishingResults->notes)){
-                                        $htmlEmailBody .= "El producto se ha publicado con el tag: ".$publishingResults->notes."<br /><br />\n\n";
-                                    }
-                                }
-                                else{
-                                    //No publicó
-                                    if ($publishingResults->notes == 'No images'){
-                                        $htmlEmailBody .= "This product (https://".env('SHPFY_BASEURL')."/products/".$shopifyProduct->id.") doesn't have at least one related image.<br /><br />\n\n";
-                                    }
-                                }
-                                $actualIdProduct = $shopifyProduct->id;
-                            }
-                        }
-                    }
-                }
-            }
-            if (!($htmlEmailBody == '')){
-
-                $this->sendPublisingReport("Next are the results of publishing products of PO No.".$poextended->po_number." to sleefs.com store:<br /><br />\n\n".$htmlEmailBody,"Publishing items report for PO: ".$poextended->po_number);
-
-            }
         } 
         /*
             
@@ -894,7 +620,21 @@ Class PurchaseOrderWebHookEndPointController extends Controller {
 
         /*
 
-            7.  Genera la respuesta al servidor de shiphero
+            7. Registra en Google Spreadsheets, versión 2023
+
+        */
+
+        if ($debug[6] == true){
+
+            $poextended->po_id = $po->purchase_order->po_id;
+            $shipheroPoToGSSyncer = new ShipheroPoToGoogleSpreadsheetSyncer();
+            $syncResponse = $shipheroPoToGSSyncer->sync($poextended);
+
+        }
+
+        /*
+
+            8.  Genera la respuesta al servidor de shiphero
                 y bloquea la hoja de cáculo
 
         */
