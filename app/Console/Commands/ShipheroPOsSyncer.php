@@ -10,6 +10,7 @@ use Sleefs\Helpers\Shiphero\ShipheroFulfillmentStatusSyncedDataChecker;
 use Sleefs\Helpers\Shiphero\ShipheroToLocalPODataSyncer;
 use Sleefs\Helpers\GraphQL\GraphQLClient;
 use Sleefs\Helpers\ShipheroGQLApi\ShipheroGQLApi;
+use Sleefs\Helpers\Google\SpreadSheets\ShipheroPoToGoogleSpreadsheetSyncer;
 
 class ShipheroPOsSyncer extends Command
 {
@@ -18,7 +19,7 @@ class ShipheroPOsSyncer extends Command
      *
      * @var string
      */
-    protected $signature = 'sleefs:shipheroPOsSyncer {--pos=*}';
+    protected $signature = 'sleefs:shipheroPOsSyncer {--pos=*} {--from=} {--status=}';
 
     /**
      * The console command description.
@@ -46,7 +47,11 @@ class ShipheroPOsSyncer extends Command
     {
         //
         $clogger = new \Sleefs\Helpers\CustomLogger("sleefs.pos-syncer.log");
+        $shipheroPoToGSSyncer = new ShipheroPoToGoogleSpreadsheetSyncer();
         $pos = $this->option('pos');
+        $from = $this->option('from');
+        $status = $this->option('status');
+
         if (isset($pos) && count($pos) > 0){
             //print_r($pos);
 
@@ -62,12 +67,35 @@ class ShipheroPOsSyncer extends Command
         }
         else{
             echo "No se ha indicado PO alguna...\n";
-            $localPos = PurchaseOrder::whereRaw("fulfillment_status='pending'")->get();
+            $fromDateSqlWhere = '';
+            $statusSqlWhere = '';
+            $whereSentenceConnector = '';
+            if (isset($from) && preg_match("/^[0-9]{4}\-[0-9]{2}\-[0-9]{2}/",$from))
+            {
+                $fromDateSqlWhere = " (created_at >= '".$from."') ";
+            }
+
+            if ((isset($status) && $status != '') && preg_match("/pending|closed|canceled|all/",$status))
+            {
+                $statusSqlWhere = " (fulfillment_status = 'pending' || fulfillment_status = 'closed' || fulfillment_status = 'canceled' ) ";
+                if ($status != 'all')
+                    $statusSqlWhere = " (fulfillment_status = '".$status."') ";
+            }
+            
+            if ($fromDateSqlWhere != '' && (isset($status) && $status != ''))
+            {
+                $statusSqlWhere = " (fulfillment_status = 'pending') ";   
+            }
+
+            if ($statusSqlWhere != '' && $fromDateSqlWhere!='')
+            {
+                $whereSentenceConnector = '&&';
+            }
+            echo $fromDateSqlWhere."".$whereSentenceConnector."".$statusSqlWhere."\n";
+            $localPos = PurchaseOrder::whereRaw($fromDateSqlWhere."".$whereSentenceConnector."".$statusSqlWhere)->get();
         }
 
         /*
-
-
 
         */
 
@@ -124,6 +152,13 @@ class ShipheroPOsSyncer extends Command
 
 
             $remotePoData = $shipHeroApi->getExtendedPOCustomQuery($cstmQueryStr);
+            if (isset($remotePoData->data->purchase_order->data->id))
+            {
+                $poExtendedToSyncWithGs = clone($remotePoData->data->purchase_order->data);
+                $poExtendedToSyncWithGs->line_items =  $remotePoData->data->purchase_order->data->line_items->edges;
+                $poExtendedToSyncWithGs->po_id = $localPo->po_id;
+                $shipheroPoToGSSyncer->sync($poExtendedToSyncWithGs);
+            }
             sleep(10);
             if (!$fulfillmentStatusChecker->validateSyncedData($localPo,$remotePoData->data->purchase_order->data)){
 
@@ -138,18 +173,11 @@ class ShipheroPOsSyncer extends Command
                     $clogger->writeToLog ("Se ha sincronizado la orden. ".$localPo->id." (PO Number: ".$localPo->po_number.")","INFO");
                 }
             }
-
-
-            
-
         }
         $clogger->writeToLog ("Sincronizando POs","INFO");
     }
 
-
-    private function syncPo($localPo){
-
-
-
+    private function syncPo($localPo)
+    {
     }
 }
