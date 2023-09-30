@@ -82,19 +82,18 @@ class ShipheroPOsSyncer extends Command
                     $statusSqlWhere = " (fulfillment_status = '".$status."') ";
             }
             
-            if ($fromDateSqlWhere != '' && (isset($status) && $status != ''))
+            if ($fromDateSqlWhere == '' && (!isset($status) && $status == ''))
             {
-                $statusSqlWhere = " (fulfillment_status = 'pending') ";   
+                $statusSqlWhere = "(fulfillment_status = 'pending')";   
             }
 
-            if ($statusSqlWhere != '' && $fromDateSqlWhere!='')
+            if ($statusSqlWhere != '' && $fromDateSqlWhere != '')
             {
                 $whereSentenceConnector = '&&';
             }
             echo $fromDateSqlWhere."".$whereSentenceConnector."".$statusSqlWhere."\n";
             $localPos = PurchaseOrder::whereRaw($fromDateSqlWhere."".$whereSentenceConnector."".$statusSqlWhere)->get();
         }
-
         /*
 
         */
