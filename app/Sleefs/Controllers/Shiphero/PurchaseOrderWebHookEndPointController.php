@@ -87,7 +87,7 @@ Class PurchaseOrderWebHookEndPointController extends Controller {
         */
 
         //$debug = array(false,true,true,true,false,true);//Define que funciones se ejecutan y cuales no. - Produccion
-        $debug = array(false,false,true,true,false,true,true);//Define que funciones se ejecutan y cuales no. - Test
+        $debug = array(false,false,true,true,false,false,true);//Define que funciones se ejecutan y cuales no. - Test
 
 
 		$po = json_decode(file_get_contents('php://input'));
