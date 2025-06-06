@@ -42,7 +42,13 @@ class ProductsController extends BaseController{
 
 
 		$productImages = $shopifyApi->getAllImagesProduct($product->idsp);
+
 		$clogger = new CustomLogger("sleefs.log");
+		if (isset($productImages->errors)){
+			$clogger->writeToLog ("[shopify] ".$productImages->errors,"ERROR");
+			return response(["error"=>true,"message"=>"shopify: ".$productImages->errors,"sku"=>$request->input('sku')],404)->header("Content-Type","json/application");
+		}
+		
 		$clogger->writeToLog ("Procesando imagenes en demanda: ".json_encode($productImages),"INFO");
 
 		if (count($productImages->images) == 0){
