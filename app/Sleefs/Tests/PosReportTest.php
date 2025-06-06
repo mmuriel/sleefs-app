@@ -35,6 +35,7 @@ class PosReportTest extends TestCase {
 		$this->item1 = new PurchaseOrderItem();
 		$this->item1->idpo = $this->po->id;
 		$this->item1->sku = 'SL-USA-BLK-CL-L';
+		$this->item1->barcode = 'bSL-USA-BLK-CL-L';
 		$this->item1->shid = '59dbc5830f969';
 		$this->item1->quantity = 5;
 		$this->item1->quantity_received = 5;
@@ -45,6 +46,7 @@ class PosReportTest extends TestCase {
 		$this->item2 = new PurchaseOrderItem();
 		$this->item2->idpo = $this->po->id;
 		$this->item2->sku = 'SL-USA-BLK-CL-XL';
+		$this->item2->barcode = 'bSL-USA-BLK-CL-XL';
 		$this->item2->shid = '59dbc5830fa20';
 		$this->item2->quantity = 3;
 		$this->item2->quantity_received = 3;
@@ -56,6 +58,7 @@ class PosReportTest extends TestCase {
 		$this->item3 = new PurchaseOrderItem();
 		$this->item3->idpo = $this->po->id;
 		$this->item3->sku = 'SL-BB-LC-SH-L';
+		$this->item3->barcode = 'bSL-BB-LC-SH-L';
 		$this->item3->shid = '58a6fd953ae30';
 		$this->item3->quantity = 5;
 		$this->item3->quantity_received = 0;
@@ -66,6 +69,7 @@ class PosReportTest extends TestCase {
 		$this->item4 = new PurchaseOrderItem();
 		$this->item4->idpo = $this->po->id;
 		$this->item4->sku = 'SL-LITACUTY-WH';
+		$this->item4->barcode = 'bSL-LITACUTY-WH';
 		$this->item4->shid = '5a15a929e9323';
 		$this->item4->quantity = 35;
 		$this->item4->quantity_received = 10;
@@ -76,6 +80,7 @@ class PosReportTest extends TestCase {
 		$this->item5 = new PurchaseOrderItem();
 		$this->item5->idpo = $this->po->id;
 		$this->item5->sku = 'SL-DIGI-RWB-Y-1';
+		$this->item5->barcode = 'bSL-DIGI-RWB-Y-1';
 		$this->item5->shid = '05286df4ee8c205f8070';
 		$this->item5->quantity = 20;
 		$this->item5->quantity_received = 0;
@@ -86,6 +91,7 @@ class PosReportTest extends TestCase {
 		$this->item6 = new PurchaseOrderItem();
 		$this->item6->idpo = $this->po->id;
 		$this->item6->sku = 'SL-OCWA-GN-AS-Y';
+		$this->item6->barcode = 'bSL-OCWA-GN-AS-Y';
 		$this->item6->shid = '3a9758818f8475cac5b1';
 		$this->item6->quantity = 56;
 		$this->item6->quantity_received = 56;

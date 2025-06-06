@@ -267,6 +267,7 @@ Class PurchaseOrderWebHookEndPointController extends Controller {
                     $itm = new PurchaseOrderItem();
                     $itm->idpo = $poDb->id;
                     $itm->sku = $itemExt->sku;
+                    $itm->barcode = $itemExt->barcode;
                     $itm->shid = $itemShort->id;
                     $itm->quantity = $itemExt->quantity;
                     $itm->quantity_received = $itemExt->quantity_received;
@@ -323,6 +324,7 @@ Class PurchaseOrderWebHookEndPointController extends Controller {
                         $itm = new PurchaseOrderItem();
                         $itm->idpo = $poDb->id;
                         $itm->sku = $itemExt->sku;
+                        $itm->barcode = $itemExt->barcode;
                         $itm->shid = $itemShort->id;
                         $itm->quantity = $itemExt->quantity;
                         $itm->quantity_received = $itemExt->quantity_received;
@@ -414,7 +416,7 @@ Class PurchaseOrderWebHookEndPointController extends Controller {
                             break;
                         }
                         else{
-                            $clogger->writeToLog ("No está definido un valos para ".$itemRaw->sku,"WARNING");
+                            $clogger->writeToLog ("No está definido un valor para ".$itemRaw->sku,"WARNING");
                         }
                     }
                 }

@@ -12,19 +12,13 @@ use Sleefs\Helpers\curl\Curl;
 class CurlTest extends TestCase {
 
     use RefreshDatabase;
-    //private $urlToCurl = 'http://apps.sleefs.com/appdev/public';
 
-
-
-    // Para realizar los tests con este dominio, 
-    // verificar que la maquina resuelva este dominio 
-    // a la IP local 127.0.0.1 (localhost) en el 
-    // archivo /etc/hosts
-
-    //private $urlToCurl = 'https://local.sientifica.com';//dev 
-    private $urlToCurl = 'https://sleefs-2.sientifica.com';//Production
+    private $urlToCurl = '';
 	public function setUp():void{
         parent::setUp();
+        $this->urlToCurl = env('APP_URL');
+        $this->urlToCurl = preg_replace("/(\:[0-9]{2,4})$/","",$this->urlToCurl);
+        //echo "\n".$this->urlToCurl."\n";
     }
 
 

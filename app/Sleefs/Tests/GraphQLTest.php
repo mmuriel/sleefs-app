@@ -57,8 +57,11 @@ class GraphQLTest extends TestCase {
         $this->assertTrue($resp->error);
     }
 
+    /*
 
     //This test is make against monday.com's GQL API, it creates a new Pulse in a test Board
+    //2025-06-05 This doesn't work anymore, since monday.com is not supported anymore by this app
+
     public function testGQLMutationBasic()
     {
         $gqlClient = new GraphQLClient(env('MONDAY_GRAPHQL_BASEURL'),array('Authorization: '.env('MONDAY_APIKEY').''));
@@ -73,6 +76,8 @@ class GraphQLTest extends TestCase {
         $this->assertMatchesRegularExpression('/P1201813-800/',$respCreation->data->create_item->name);
         $this->assertTrue(isset($respDeletion->data->delete_item->id));
     }
+    */
+
 
     /* Preparing the Test */
 

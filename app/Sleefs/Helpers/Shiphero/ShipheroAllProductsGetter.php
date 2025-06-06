@@ -42,7 +42,7 @@ class ShipheroAllProductsGetter {
                     $products->products->metaData = new \stdClass();
                     $products->products->metaData->hasNextPage = 1;
                 }
-                sleep((int)($matches[1]+1));
+                sleep((int)($matches[1]*2));
             }
             else
             {

@@ -123,6 +123,7 @@ class ShipheroPOsSyncerUnitTest extends TestCase {
 		$poItem1 = new PurchaseOrderItem();
 		$poItem1->idpo = $localPo->id;
 		$poItem1->sku = "SL-SBUSA-AS-XL";
+		$poItem1->barcode = "bSL-SBUSA-AS-XL";
 		$poItem1->name = "Softball USA Arm Sleeve";
 		$poItem1->shid = "UHVyY2hhc2VPcmRlckxpbmVJdGVtOjc5MDEwMjQ9239";
 		$poItem1->quantity = 25;
@@ -137,6 +138,7 @@ class ShipheroPOsSyncerUnitTest extends TestCase {
 		$poItem2 = new PurchaseOrderItem();
 		$poItem2->idpo = $localPo->id;
 		$poItem2->sku = "SL-WASHSLP-WH";
+		$poItem2->barcode = "bSL-WASHSLP-WH";
 		$poItem2->name = "War Shark SL Pattern Headband";
 		$poItem2->shid = "UHVyY2hhc2VPcmRlckxpbmVJdGVtOjc5MDExMTA=";
 		$poItem2->quantity = 20;

@@ -24,6 +24,7 @@ class MondayGqlApiTest extends TestCase {
         $this->prepareForTests();
     }
  
+ 	/*
 
 	public function testGetAllBoards(){
 
@@ -207,6 +208,8 @@ class MondayGqlApiTest extends TestCase {
 		$this->assertEquals($newPulse->data->create_item->id,$delPulse->data->delete_item->id);		
 	}
 
+	*/
+	
 	/* Preparing the Test */
 
 	public function createApplication()

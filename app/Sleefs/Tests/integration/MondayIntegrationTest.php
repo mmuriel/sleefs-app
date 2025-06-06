@@ -23,6 +23,7 @@ use Sleefs\Helpers\Monday\MondayGroupChecker;
 use Sleefs\Helpers\Monday\MondayFullPulseColumnGetter;
 
 class MondayIntegrationTest extends TestCase {
+
     use RefreshDatabase;
     private $pos = array();
 	private $pulses = array();
@@ -40,6 +41,7 @@ class MondayIntegrationTest extends TestCase {
         $this->prepareForTests();
     }
 
+    /*
     public function testCheckPulseIfExists(){
 
     	$pulse = Pulse::whereRaw(" idpo='".$this->pos[1]->id."' ")->get();
@@ -124,9 +126,9 @@ class MondayIntegrationTest extends TestCase {
     }
 
 
-    /*
-        If a PO vendor isn't Good People Sports or DX, it is not a valid candidate PO for monday.com registry
-    */
+    //
+    //  If a PO vendor isn't Good People Sports or DX, it is not a valid candidate PO for monday.com registry
+    //
     public function testValidatePOAsMondayCandidate(){
 
         $arrValidVendors = array('DX Sporting Goods','Good People Sports');
@@ -261,21 +263,21 @@ class MondayIntegrationTest extends TestCase {
 
     }
 
+    */
 
 
-
-
-
-	/* Preparing the Test */
+	// Preparing the Test
 	public function createApplication(){
         $app = require __DIR__.'/../../../../bootstrap/app.php';
         $app->make(Kernel::class)->bootstrap();
         return $app;
     }
-     /**
-     * Migrates the database and set the mailer to 'pretend'.
-     * This will cause the tests to run quickly.
-     */
+
+
+    //
+    // Migrates the database and set the mailer to 'pretend'.
+    // This will cause the tests to run quickly.
+    //
     private function prepareForTests()
     {
      	\Artisan::call('migrate');

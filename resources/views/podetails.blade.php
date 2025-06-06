@@ -86,6 +86,7 @@
                     <tr>
                         <th>Product</th>
                         <th>SKU</th>
+                        <th>Barcode</th>
                         <th>Quantity</th>
                         <th>Item Price</th>
                         <th>Total Price</th>
@@ -95,25 +96,25 @@
                 <tbody>
                     @if ($po->items->isEmpty())
                     <tr>
-                        <td colspan="6">There aren't items on this PO</td>
+                        <td colspan="7">There aren't items on this PO</td>
                     </tr>
                     @else
                         @foreach ($po->items as $item)
                             {!! $item->poItemListView !!}
                         @endforeach
                     <tr>
-                        <td colspan="4">Subtotal: </td>
-                        <td>{{ $po->subTotal }}</td>
+                        <td colspan="5">Subtotal: </td>
+                        <td colspan="1">{{ $po->subTotal }}</td>
                         <td></td>
                     </tr>
                     <tr>
-                        <td colspan="4">Shipping & Handling:</td>
-                        <td>{{ $po->sh_cost }}</td>
+                        <td colspan="5">Shipping & Handling:</td>
+                        <td colspan="1">{{ $po->sh_cost }}</td>
                         <td></td>
                     </tr>
                     <tr>
-                        <td colspan="4">Total:</td>
-                        <td>{{ $po->grandTotal }}</td>
+                        <td colspan="5">Total:</td>
+                        <td colspan="1">{{ $po->grandTotal }}</td>
                         <td></td>
                     </tr>
                     @endif

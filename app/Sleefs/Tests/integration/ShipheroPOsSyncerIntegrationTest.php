@@ -102,6 +102,7 @@ class ShipheroPOsSyncerIntegrationTest extends TestCase {
         $this->items[0]->idpo = $this->pos[0]->id;
         $this->items[0]->shid = 'UHVyY2hhc2VPcmRlckxpbmVJdGVtOjQ2MTYxMTU=';
         $this->items[0]->sku = '123';
+        $this->items[0]->barcode = 'b123';
         $this->items[0]->quantity = 27;
         $this->items[0]->quantity_received = 15;
         $this->items[0]->qty_pending = 12;
@@ -113,6 +114,7 @@ class ShipheroPOsSyncerIntegrationTest extends TestCase {
         $this->items[1]->idpo = $this->pos[0]->id;
         $this->items[1]->shid = 'UHVyY2hhc2VPcmRlckxpbmVJdGVtOjQ2MTg5OTY=';
         $this->items[1]->sku = 'CUSTOM2-CL';
+        $this->items[1]->barcode = 'bCUSTOM2-CL';
         $this->items[1]->quantity = 8;
         $this->items[1]->quantity_received = 3;
         $this->items[1]->qty_pending = 5;
@@ -125,6 +127,7 @@ class ShipheroPOsSyncerIntegrationTest extends TestCase {
         $this->items[2]->idpo = $this->pos[0]->id;
         $this->items[2]->shid = 'UHVyY2hhc2VPcmRlckxpbmVJdGVtOjQ2MjAzMDI=';
         $this->items[2]->sku = 'CUSTOM-JS';
+        $this->items[2]->barcode = 'bCUSTOM-JS';
         $this->items[2]->quantity = 6;
         $this->items[2]->quantity_received = 4;
         $this->items[2]->qty_pending = 2;

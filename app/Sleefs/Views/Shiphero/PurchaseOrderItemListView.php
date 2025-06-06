@@ -54,6 +54,7 @@ class PurchaseOrderItemListView {
 								<tr>
                                     <td>'.$this->poItem->name.'</td>
                                     <td data-prdsku="'.$this->poItem->sku.'">'.$this->poItem->sku.'</td>
+                                    <td data-prdBarcode="'.$this->poItem->barcode.'">'.$this->poItem->barcode.'</td>
                                     <td>'.$this->poItem->quantity.'</td>
                                     <td>'.$this->poItem->price.'</td>
                                     <td>'.($this->poItem->price * $this->poItem->quantity).'</td>

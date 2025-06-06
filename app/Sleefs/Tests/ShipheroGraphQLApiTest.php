@@ -35,6 +35,7 @@ class ShipheroGraphQLApiTest extends TestCase {
 		$this->item1 = new PurchaseOrderItem();
 		$this->item1->idpo = $this->po->id;
 		$this->item1->sku = 'SL-USA-BLK-CL-L';
+        $this->item1->barcode = 'bSL-USA-BLK-CL-L';
 		$this->item1->shid = '59dbc5830f969';
 		$this->item1->quantity = 5;
 		$this->item1->quantity_received = 5;
@@ -45,6 +46,7 @@ class ShipheroGraphQLApiTest extends TestCase {
 		$this->item2 = new PurchaseOrderItem();
 		$this->item2->idpo = $this->po->id;
 		$this->item2->sku = 'SL-USA-BLK-CL-XL';
+        $this->item2->barcode = 'bSL-USA-BLK-CL-XL';
 		$this->item2->shid = '59dbc5830fa20';
 		$this->item2->quantity = 3;
 		$this->item2->quantity_received = 3;
