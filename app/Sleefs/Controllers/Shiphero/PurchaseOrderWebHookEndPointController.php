@@ -271,7 +271,7 @@ Class PurchaseOrderWebHookEndPointController extends Controller {
                     $itm->shid = $itemShort->id;
                     $itm->quantity = $itemExt->quantity;
                     $itm->quantity_received = $itemExt->quantity_received;
-                    $itm->name = $itemExt->product_name;
+                    $itm->name = substr($itemExt->product_name,0,149);
                     $itm->idmd5 = md5($itemExt->sku.'-'.$poDb->po_id);
                     $itm->product_type = $prdTypeItem;
                     $itm->qty_pending = ((int)$itemExt->quantity - (int)$itemExt->quantity_received);
@@ -328,7 +328,7 @@ Class PurchaseOrderWebHookEndPointController extends Controller {
                         $itm->shid = $itemShort->id;
                         $itm->quantity = $itemExt->quantity;
                         $itm->quantity_received = $itemExt->quantity_received;
-                        $itm->name = $itemExt->product_name;
+                        $itm->name = substr($itemExt->product_name,0,149);
                         $itm->idmd5 = md5($itemExt->sku.'-'.$poDb->po_id);
                         $itm->product_type = $prdTypeItem;
                         $itm->qty_pending = ((int)$itemExt->quantity - (int)$itemExt->quantity_received);
@@ -349,7 +349,7 @@ Class PurchaseOrderWebHookEndPointController extends Controller {
                         }
                         $itm->quantity = $itemExt->quantity;
                         $itm->quantity_received = $itemExt->quantity_received;
-                        $itm->name = $itemExt->product_name;
+                        $itm->name = substr($itemExt->product_name,0,149);
                         $itm->barcode = $itemExt->barcode;
                         $itm->product_type = $prdTypeItem;
                         $itm->qty_pending = ((int)$itemExt->quantity - (int)$itemExt->quantity_received);
