@@ -18,6 +18,7 @@ class CurlTest extends TestCase {
         parent::setUp();
         $this->urlToCurl = env('APP_URL');
         $this->urlToCurl = preg_replace("/(\:[0-9]{2,4})$/","",$this->urlToCurl);
+        $this->urlToCurl = preg_replace("/^https/","http",$this->urlToCurl);
         //echo "\n".$this->urlToCurl."\n";
     }
 

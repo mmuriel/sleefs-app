@@ -350,6 +350,7 @@ Class PurchaseOrderWebHookEndPointController extends Controller {
                         $itm->quantity = $itemExt->quantity;
                         $itm->quantity_received = $itemExt->quantity_received;
                         $itm->name = $itemExt->product_name;
+                        $itm->barcode = $itemExt->barcode;
                         $itm->product_type = $prdTypeItem;
                         $itm->qty_pending = ((int)$itemExt->quantity - (int)$itemExt->quantity_received);
                         $itm->save();
