@@ -201,10 +201,15 @@ var updatePicModule = (function($){
 			console.log(poid);
 			console.log('Before ========>>>>>>>>>>');
 			console.log(updatePicsSkuArr);
-			_checkForEmptyPics();
+
+			var imgs = $("img.product-img");
+			imgs.each(function(index,imgObject){
+				updatePicsSkuArr.push(imgObject.getAttribute('data-prdsku'));
+			});
+			updatePicsSkuArr = [...new Set(updatePicsSkuArr)];
+
 			console.log('After ========<<<<<<<<<<<');
 			console.log(updatePicsSkuArr);
-			console.log("MMMMAAAAAA---->");
 
 			if (updatePicsSkuArr.length == 0){
 				updatePicsSkuArr.push(1);

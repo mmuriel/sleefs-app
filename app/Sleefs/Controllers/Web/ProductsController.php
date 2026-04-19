@@ -8,6 +8,7 @@ use App\User;
 use Sleefs\Models\Shopify\Product;
 use Sleefs\Models\Shopify\ProductImage;
 use Sleefs\Models\Shopify\Variant;
+use Sleefs\Models\Shopify\VariantImage;
 
 use Sleefs\Helpers\ShopifyAPI\Shopify;
 use Sleefs\Helpers\CustomLogger;
@@ -32,7 +33,7 @@ class ProductsController extends BaseController{
 
 	function updateProductPic(Request $request){
 
-		$variant = Variant::whereRaw(" sku='".$request->input('sku')."' ")->first();
+		$variant = Variant::whereRaw(" sku='".$request->input('sku')."' ")->orderBy('created_at','DESC')->first();
 		if ($variant == null){
 			return response(["error"=>true,"message"=>"No variant for this SKU","sku"=>$request->input('sku')],404)->header("Content-Type","json/application");
 		}
@@ -57,6 +58,7 @@ class ProductsController extends BaseController{
 
 		$urlImageGenerator = new ImageUrlBySizeGenerator();
 		$arrImagesToRet = [];
+		$variantImagesProcessed = [];
 
 		for ($i=0;$i<count($productImages->images);$i++){
 			$dbProductImg = ProductImage::where("idsp","=","shpfy_".$productImages->images[$i]->id)->first();
@@ -67,13 +69,40 @@ class ProductsController extends BaseController{
                 $prdImg->position = $productImages->images[$i]->position;
                 $prdImg->url = $productImages->images[$i]->src;
                 $prdImg->save();
-                array_push($arrImagesToRet,$urlImageGenerator->createImgUrlWithSizeParam($productImages->images[$i]->src,150));
+                $imgUrl = $productImages->images[$i]->src;
             }
             else{
-            	array_push($arrImagesToRet,$urlImageGenerator->createImgUrlWithSizeParam($dbProductImg->url,150));	
+            	$imgUrl = $dbProductImg->url;
             }
 
+            if (isset($productImages->images[$i]->variant_ids) && count($productImages->images[$i]->variant_ids) > 0){
+                foreach ($productImages->images[$i]->variant_ids as $variantIdShopify){
+                    $localVariant = Variant::where("idsp","=","shpfy_".$variantIdShopify)->first();
+                    if ($localVariant != null){
+                        $dbVariantImg = VariantImage::where("idsp","=","shpfy_".$productImages->images[$i]->id)->where("idvariant","=",$localVariant->id)->first();
+                        if ($dbVariantImg == null){
+                            $varImg = new VariantImage();
+                            $varImg->idvariant = $localVariant->id;
+                            $varImg->idsp = "shpfy_".$productImages->images[$i]->id;
+                            $varImg->url = $imgUrl;
+                            $varImg->save();
+                        }
+                        if ($localVariant->id == $variant->id && !isset($variantImagesProcessed[$productImages->images[$i]->id])){
+                            array_push($arrImagesToRet,$urlImageGenerator->createImgUrlWithSizeParam($imgUrl,150));
+                            $variantImagesProcessed[$productImages->images[$i]->id] = true;
+                        }
+                    }
+                }
+            }
 		}
+
+		if (count($arrImagesToRet) == 0){
+			$productImagesLocal = ProductImage::where('idproducto','=',$product->id)->orderBy('position','ASC')->get();
+			foreach ($productImagesLocal as $img){
+				array_push($arrImagesToRet,$urlImageGenerator->createImgUrlWithSizeParam($img->url,150));
+			}
+		}
+
 		return response()->json(["error"=>false,"sku"=>$request->input('sku'),"images"=>$arrImagesToRet]);
 
 	}
